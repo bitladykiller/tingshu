@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+
+<mapper namespace="com.atguigu.tingshu.album.mapper.BaseAttributeMapper">
+    <resultMap id="baseAttributeMap" type="com.atguigu.tingshu.model.album.BaseAttribute" autoMapping="true">
+        <id column="id" property="id"/>
+        <collection property="attributeValueList" ofType="com.atguigu.tingshu.model.album.BaseAttributeValue" autoMapping="true">
+            <id column="attribute_value_id" property="id" />
+        </collection>
+    </resultMap>
+
+
+    <select id="selectAttribute" resultMap="baseAttributeMap">
+        select
+            ba.id,
+            ba.attribute_name,
+            ba.category1_id,
+            bav.id attribute_value_id,
+            bav.value_name,
+            bav.attribute_id
+        from
+            base_attribute ba
+        left join base_attribute_value bav on ba.id = bav.attribute_id
+        where
+            ba.category1_id = #{categoryId}
+        order by
+            ba.id
+    </select>
+</mapper>
+
