@@ -18,4 +18,6 @@ public interface TrackInfoService extends IService<TrackInfo> {
     void saveTrackInfo(TrackInfoVo trackInfoVo);
 
     IPage<TrackListVo> findUserTrackPage(Page<TrackListVo> trackListVoPage, TrackInfoQuery trackInfoQuery);
+
+    void removeTrackInfo(Long id);
 }

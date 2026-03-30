@@ -4,6 +4,7 @@ import com.atguigu.tingshu.album.config.MinioConstantProperties;
 import com.atguigu.tingshu.album.mapper.AlbumInfoMapper;
 import com.atguigu.tingshu.album.mapper.TrackInfoMapper;
 import com.atguigu.tingshu.album.mapper.TrackStatMapper;
+import com.atguigu.tingshu.album.service.AlbumInfoService;
 import com.atguigu.tingshu.album.service.TrackInfoService;
 import com.atguigu.tingshu.album.service.VodService;
 import com.atguigu.tingshu.common.constant.SystemConstant;
@@ -54,7 +55,8 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
     {
         MinioClient minioClient = MinioClient.builder()
                 .endpoint(minioConstantProperties.getEndpointUrl())
-                .credentials(minioConstantProperties.getAccessKey(), minioConstantProperties.getSecreKey())
+                .credentials(minioConstantProperties.getAccessKey(),
+                        minioConstantProperties.getSecreKey())
                 .build();
         try
         {
@@ -63,10 +65,14 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
             {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(minioConstantProperties.getBucketName()).build());
             }
-            String fileName = UUID.randomUUID().toString().replace("-", "") + "." + FilenameUtils.getExtension(file.getOriginalFilename());
+            String fileName = UUID.randomUUID().toString().replace("-",
+                    "") + "." + FilenameUtils.getExtension(file.getOriginalFilename());
             String objectName = "track/" + fileName;
-            minioClient.putObject(PutObjectArgs.builder().bucket(minioConstantProperties.getBucketName()).object(objectName).stream(file.getInputStream(), file.getSize(), -1).contentType(file.getContentType()).build());
-            return Map.of("url", minioConstantProperties.getEndpointUrl() + "/" + minioConstantProperties.getBucketName() + "/" + objectName);
+            minioClient.putObject(PutObjectArgs.builder().bucket(minioConstantProperties.getBucketName()).object(objectName).stream(file.getInputStream(),
+                    file.getSize(),
+                    -1).contentType(file.getContentType()).build());
+            return Map.of("url",
+                    minioConstantProperties.getEndpointUrl() + "/" + minioConstantProperties.getBucketName() + "/" + objectName);
 
         } catch (Exception e)
         {
@@ -80,16 +86,18 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
     {
         //1 添加声音基本信息 track_info
         TrackInfo trackInfo = new TrackInfo();
-        BeanUtils.copyProperties(trackInfoVo, trackInfo);
+        BeanUtils.copyProperties(trackInfoVo,
+                trackInfo);
 
         //需要手动设置
         //用户id
         trackInfo.setUserId(1L);
 
 
-        LambdaQueryWrapper<TrackInfo> wrapper = new LambdaQueryWrapper <TrackInfo>();
+        LambdaQueryWrapper<TrackInfo> wrapper = new LambdaQueryWrapper<TrackInfo>();
         wrapper.select(TrackInfo::getOrderNum);
-        wrapper.eq(TrackInfo::getAlbumId, trackInfoVo.getAlbumId());
+        wrapper.eq(TrackInfo::getAlbumId,
+                trackInfoVo.getAlbumId());
         wrapper.orderByDesc(TrackInfo::getId);
         wrapper.last(" limit 1 ");
         TrackInfo trackInfo_ordernum = trackInfoMapper.selectOne(wrapper);
@@ -111,17 +119,38 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
         Integer includeTrackCount = albumInfo.getIncludeTrackCount();
         albumInfo.setIncludeTrackCount(includeTrackCount + 1);
         albumInfoMapper.updateById(albumInfo);
-        this.saveTrackStat(trackInfo.getId(), SystemConstant.TRACK_STAT_PLAY);
-        this.saveTrackStat(trackInfo.getId(), SystemConstant.TRACK_STAT_COLLECT);
-        this.saveTrackStat(trackInfo.getId(), SystemConstant.TRACK_STAT_PRAISE);
-        this.saveTrackStat(trackInfo.getId(), SystemConstant.TRACK_STAT_COMMENT);
+        this.saveTrackStat(trackInfo.getId(),
+                SystemConstant.TRACK_STAT_PLAY);
+        this.saveTrackStat(trackInfo.getId(),
+                SystemConstant.TRACK_STAT_COLLECT);
+        this.saveTrackStat(trackInfo.getId(),
+                SystemConstant.TRACK_STAT_PRAISE);
+        this.saveTrackStat(trackInfo.getId(),
+                SystemConstant.TRACK_STAT_COMMENT);
     }
 
     @Override
-    public IPage<TrackListVo> findUserTrackPage(Page<TrackListVo> trackListVoPage, TrackInfoQuery trackInfoQuery)
+    public IPage<TrackListVo> findUserTrackPage(Page<TrackListVo> trackListVoPage,
+                                                TrackInfoQuery trackInfoQuery)
     {
 //	调用mapper层方法
-        return trackInfoMapper.selectUserTrackPage(trackListVoPage, trackInfoQuery);
+        return trackInfoMapper.selectUserTrackPage(trackListVoPage,
+                trackInfoQuery);
+    }
+
+    @Override
+    public void removeTrackInfo(Long id)
+    {
+        TrackInfo trackInfo = this.getById(id);
+        AlbumInfo albumInfo = albumInfoMapper.selectById(trackInfo.getAlbumId());
+        Integer includeTrackCount = albumInfo.getIncludeTrackCount();
+        albumInfo.setIncludeTrackCount(includeTrackCount - 1);
+        albumInfoMapper.updateById(albumInfo);
+        trackStatMapper.delete(new LambdaQueryWrapper<TrackStat>().eq(TrackStat::getTrackId,
+                id));
+        trackInfoMapper.updateTrackNum(trackInfo.getAlbumId(),
+                trackInfo.getOrderNum());
+        vodService.removeTrack(trackInfo.getMediaFileId());
     }
 
     /**
@@ -130,7 +159,8 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
      * @param trackId
      * @param trackType
      */
-    private void saveTrackStat(Long trackId, String trackType)
+    private void saveTrackStat(Long trackId,
+                               String trackType)
     {
         TrackStat trackStat = new TrackStat();
         trackStat.setTrackId(trackId);

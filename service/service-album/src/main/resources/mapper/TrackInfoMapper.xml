@@ -38,6 +38,14 @@
         order by track.id desc
     </select>
 
+    <update id="updateTrackNum">
+        update track_info
+        set order_num = order_num - 1
+        where album_id = #{albumId}
+          and order_num > #{orderNum}
+          and is_deleted = 0
+    </update>
+
 
 </mapper>
 

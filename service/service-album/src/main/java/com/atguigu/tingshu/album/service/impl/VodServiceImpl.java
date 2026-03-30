@@ -12,9 +12,7 @@ import com.qcloud.vod.model.VodUploadRequest;
 import com.qcloud.vod.model.VodUploadResponse;
 import com.tencentcloudapi.common.Credential;
 import com.tencentcloudapi.vod.v20180717.VodClient;
-import com.tencentcloudapi.vod.v20180717.models.DescribeMediaInfosRequest;
-import com.tencentcloudapi.vod.v20180717.models.DescribeMediaInfosResponse;
-import com.tencentcloudapi.vod.v20180717.models.MediaInfo;
+import com.tencentcloudapi.vod.v20180717.models.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,17 +25,18 @@ import java.util.Map;
 
 @Slf4j
 @Service
-public class VodServiceImpl implements VodService {
+public class VodServiceImpl implements VodService
+{
 
     @Autowired
     private VodConstantProperties vodConstantProperties;
 
     @Override
-    public Map<String,Object>uploadTrack(MultipartFile file)
+    public Map<String, Object> uploadTrack(MultipartFile file)
     {
 
         String tempPath = UploadFileUtil.uploadTempPath(vodConstantProperties.getTempPath(),
-                        file);
+                file);
         VodUploadClient client =
                 new VodUploadClient(vodConstantProperties.getSecretId(),
                         vodConstantProperties.getSecretKey());
@@ -49,8 +48,10 @@ public class VodServiceImpl implements VodService {
             VodUploadResponse response = client.upload(vodConstantProperties.getRegion(),
                     request);
             HashMap<String, Object> map = new HashMap<>();
-            map.put("mediaFileId", response.getFileId());
-            map.put("mediaUrl", response.getMediaUrl());
+            map.put("mediaFileId",
+                    response.getFileId());
+            map.put("mediaUrl",
+                    response.getMediaUrl());
             return map;
         } catch (Exception e)
         {
@@ -62,16 +63,19 @@ public class VodServiceImpl implements VodService {
     @Override
     public TrackMediaInfoVo getmediaInfoByFileId(String mediaFileId)
     {
-        Credential cred = new Credential(vodConstantProperties.getSecretId(), vodConstantProperties.getSecretKey());
+        Credential cred = new Credential(vodConstantProperties.getSecretId(),
+                vodConstantProperties.getSecretKey());
         // 实例化要请求产品的client对象,clientProfile是可选的
-        VodClient client = new VodClient(cred, vodConstantProperties.getRegion());
+        VodClient client = new VodClient(cred,
+                vodConstantProperties.getRegion());
         // 实例化一个请求对象,每个接口都会对应一个request对象
         DescribeMediaInfosRequest req = new DescribeMediaInfosRequest();
         //  设置当前fileIds
         req.setFileIds(new String[]{mediaFileId});
         // 返回的resp是一个DescribeMediaInfosResponse的实例，与请求对象对应
         DescribeMediaInfosResponse response = client.DescribeMediaInfos(req);
-        log.info("声音详细返回结果：{}", JSON.toJSONString(response));
+        log.info("声音详细返回结果：{}",
+                JSON.toJSONString(response));
         //  判断对象不为空
         if (response.getMediaInfoSet().length > 0)
         {
@@ -87,5 +91,24 @@ public class VodServiceImpl implements VodService {
             return trackMediaInfoVo;
         }
         return null;
+    }
+
+    @SneakyThrows
+    @Override
+    public void removeTrack(String mediaFileId)
+    {
+        Credential cred = new Credential(vodConstantProperties.getSecretId(),
+                vodConstantProperties.getSecretKey());
+        // 实例化要请求产品的client对象,clientProfile是可选的
+        VodClient client = new VodClient(cred,
+                "");
+        // 实例化一个请求对象,每个接口都会对应一个request对象
+        DeleteMediaRequest req = new DeleteMediaRequest();
+        req.setFileId(mediaFileId);
+        // 返回的resp是一个DeleteMediaResponse的实例，与请求对象对应
+        DeleteMediaResponse response = client.DeleteMedia(req);
+        // 输出json格式的字符串回包
+        log.info("声音删除返回结课: {}",
+                JSON.toJSONString(response));
     }
 }

@@ -24,49 +24,56 @@ import java.util.Map;
 @RestController
 @RequestMapping("api/album/trackInfo")
 @SuppressWarnings({"all"})
-public class TrackInfoApiController {
+public class TrackInfoApiController
+{
 
-	@Autowired
-	private TrackInfoService trackInfoService;
+    @Autowired
+    private TrackInfoService trackInfoService;
     @Autowired
     private VodService vodService;
 
 
-	@Operation(summary = "上传声音的文件")
-	@PostMapping("uploadTrack")
-	public Result<Map<String, Object>> uploadTrack(MultipartFile file)
-	{
-		Map<String, Object> map = vodService.uploadTrack(file);
-		return Result.ok(map);
-	}
+    @Operation(summary = "上传声音的文件")
+    @PostMapping("uploadTrack")
+    public Result<Map<String, Object>> uploadTrack(MultipartFile file)
+    {
+        Map<String, Object> map = vodService.uploadTrack(file);
+        return Result.ok(map);
+    }
 
-	@Operation(summary = "新增声音")
-	@PostMapping("saveTrackInfo")
-	public Result saveTrackInfo(@RequestBody @Validated TrackInfoVo trackInfoVo)
-	{
-		trackInfoService.saveTrackInfo(trackInfoVo);
-		return Result.ok();
-	}
+    @Operation(summary = "新增声音")
+    @PostMapping("saveTrackInfo")
+    public Result saveTrackInfo(@RequestBody @Validated TrackInfoVo trackInfoVo)
+    {
+        trackInfoService.saveTrackInfo(trackInfoVo);
+        return Result.ok();
+    }
 
-	@Operation(summary = "获取当前用户声音分页列表")
-	@PostMapping("findUserTrackPage/{page}/{limit}")
-	public Result<IPage<TrackListVo>> findUserTrackPage(@Parameter(name = "page", description = "当前页面", required = true)
-														@PathVariable Long page,
-														@Parameter(name = "limit", description = "每页记录数", required = true)
-														@PathVariable Long limit,
-														@Parameter(name = "trackInfoQuery", description = "查询对象", required = false)
-														@RequestBody TrackInfoQuery trackInfoQuery)
-	{
-		//	设置当前用户Id
-		trackInfoQuery.setUserId(AuthContextHolder.getUserId());
-		//	创建对象
-		Page<TrackListVo> trackListVoPage = new Page<>(page,
-				limit);
-		IPage<TrackListVo> trackListVoIPage = trackInfoService.findUserTrackPage(trackListVoPage,
-				trackInfoQuery);
-		//	返回数据
-		return Result.ok(trackListVoIPage);
-	}
+    @Operation(summary = "获取当前用户声音分页列表")
+    @PostMapping("findUserTrackPage/{page}/{limit}")
+    public Result<IPage<TrackListVo>> findUserTrackPage(@Parameter(name = "page", description = "当前页面", required = true)
+                                                        @PathVariable Long page,
+                                                        @Parameter(name = "limit", description = "每页记录数", required = true)
+                                                        @PathVariable Long limit,
+                                                        @Parameter(name = "trackInfoQuery", description = "查询对象", required = false)
+                                                        @RequestBody TrackInfoQuery trackInfoQuery)
+    {
+        trackInfoQuery.setUserId(AuthContextHolder.getUserId());
+        Page<TrackListVo> trackListVoPage = new Page<>(page,
+                limit);
+        IPage<TrackListVo> trackListVoIPage = trackInfoService.findUserTrackPage(trackListVoPage,
+                trackInfoQuery);
+        return Result.ok(trackListVoIPage);
+    }
+
+    @Operation(summary = "删除声音信息")
+    @DeleteMapping("removeTrackInfo/{id}")
+    public Result removeTrackInfo(@PathVariable Long id)
+    {
+        //	调用服务层方法
+        trackInfoService.removeTrackInfo(id);
+        return Result.ok();
+    }
 
 }
 
