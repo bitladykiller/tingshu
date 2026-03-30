@@ -8,6 +8,8 @@ import com.atguigu.tingshu.album.service.AlbumInfoService;
 import com.atguigu.tingshu.album.service.TrackInfoService;
 import com.atguigu.tingshu.album.service.VodService;
 import com.atguigu.tingshu.common.constant.SystemConstant;
+import com.atguigu.tingshu.common.execption.GuiguException;
+import com.atguigu.tingshu.common.result.ResultCodeEnum;
 import com.atguigu.tingshu.model.album.AlbumInfo;
 import com.atguigu.tingshu.model.album.TrackInfo;
 import com.atguigu.tingshu.model.album.TrackStat;
@@ -28,6 +30,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
@@ -49,6 +52,7 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
     private AlbumInfoMapper albumInfoMapper;
     @Autowired
     private TrackStatMapper trackStatMapper;
+
 
     @Override
     public Map<String, Object> uploadTrack(MultipartFile file)
@@ -91,6 +95,7 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
 
         //需要手动设置
         //用户id
+        //TODO 后续完善登录功能之后需要来这个改善这个逻辑的
         trackInfo.setUserId(1L);
 
 
@@ -133,11 +138,11 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
     public IPage<TrackListVo> findUserTrackPage(Page<TrackListVo> trackListVoPage,
                                                 TrackInfoQuery trackInfoQuery)
     {
-//	调用mapper层方法
         return trackInfoMapper.selectUserTrackPage(trackListVoPage,
                 trackInfoQuery);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void removeTrackInfo(Long id)
     {
@@ -153,12 +158,25 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
         vodService.removeTrack(trackInfo.getMediaFileId());
     }
 
-    /**
-     * 初始化统计数量
-     *
-     * @param trackId
-     * @param trackType
-     */
+    @Override
+   public void updateTrackInfo(Long id, TrackInfoVo trackInfoVo) {
+     TrackInfo trackInfo = this.getById(id);
+     String mediaFileId = trackInfo.getMediaFileId();
+     BeanUtils.copyProperties(trackInfoVo, trackInfo);
+     if (!trackInfoVo.getMediaFileId().equals(mediaFileId)) {
+       TrackMediaInfoVo trackMediaInfoVo = vodService.getmediaInfoByFileId(trackInfoVo.getMediaFileId());
+       if (null==trackMediaInfoVo){
+         throw new GuiguException(ResultCodeEnum.VOD_FILE_ID_ERROR);
+       }
+       trackInfo.setMediaUrl(trackMediaInfoVo.getMediaUrl());
+       trackInfo.setMediaType(trackMediaInfoVo.getType());
+       trackInfo.setMediaDuration(trackMediaInfoVo.getDuration());
+       trackInfo.setMediaSize(trackMediaInfoVo.getSize());
+       vodService.removeTrack(mediaFileId);
+     }
+     this.updateById(trackInfo);
+   }
+
     private void saveTrackStat(Long trackId,
                                String trackType)
     {
