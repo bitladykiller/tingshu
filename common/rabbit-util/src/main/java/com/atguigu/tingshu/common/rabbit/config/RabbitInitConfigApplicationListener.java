@@ -73,32 +73,7 @@ public class RabbitInitConfigApplicationListener implements ApplicationListener<
         });
     }
 
-//    /**
-//     * 消息重新发送
-//     *
-//     * @param correlationData
-//     */
-//    private void retrySendMsg(CorrelationData correlationData) {
-//        //获取相关数据
-//        GuiguCorrelationData gmallCorrelationData = (GuiguCorrelationData) correlationData;
 //
-//        //获取redis中存放重试次数
-//        //先重发，在写会到redis中次数
-//        int retryCount = gmallCorrelationData.getRetryCount();
-//        if (retryCount >= 3) {
-//            //超过最大重试次数
-//            log.error("生产者超过最大重试次数，将失败的消息存入数据库用人工处理；给管理员发送邮件；给管理员发送短信；");
-//            return;
-//        }
-//        //重发消息
-//        rabbitTemplate.convertAndSend(gmallCorrelationData.getExchange(), gmallCorrelationData.getRoutingKey(), gmallCorrelationData.getMessage(), gmallCorrelationData);
-//        //重发次数+1
-//        retryCount += 1;
-//        gmallCorrelationData.setRetryCount(retryCount);
-//        redisTemplate.opsForValue().set(gmallCorrelationData.getId(), JSON.toJSONString(gmallCorrelationData), 10, TimeUnit.MINUTES);
-//        log.info("进行消息重发！");
-//    }
-
     /**
      * 消息重新发送
      *
