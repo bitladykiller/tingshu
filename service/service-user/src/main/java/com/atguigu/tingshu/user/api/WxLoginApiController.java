@@ -3,17 +3,21 @@ package com.atguigu.tingshu.user.api;
 import cn.binarywang.wx.miniapp.api.WxMaService;
 import cn.binarywang.wx.miniapp.bean.WxMaJscode2SessionResult;
 import com.atguigu.tingshu.common.constant.RedisConstant;
+import com.atguigu.tingshu.common.login.GuiGuLogin;
 import com.atguigu.tingshu.common.rabbit.constant.MqConst;
 import com.atguigu.tingshu.common.rabbit.service.RabbitService;
 import com.atguigu.tingshu.common.result.Result;
+import com.atguigu.tingshu.common.util.AuthContextHolder;
 import com.atguigu.tingshu.model.user.UserInfo;
 import com.atguigu.tingshu.user.config.WeChatMpConfig;
 import com.atguigu.tingshu.user.service.UserInfoService;
+import com.atguigu.tingshu.vo.user.UserInfoVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.error.WxErrorException;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -74,6 +78,18 @@ public class WxLoginApiController
         map.put("token",
                 token);
         return Result.ok(map);
+    }
+
+    @GuiGuLogin(required = true)
+    @Operation(summary = "获取登录信息")
+    @GetMapping("getUserInfo")
+    public Result getUserInfo()
+    {
+        Long userId = AuthContextHolder.getUserId();
+        UserInfo userInfo = userInfoService.getById(userId);
+        UserInfoVo userInfoVo = new UserInfoVo();
+        BeanUtils.copyProperties(userInfo, userInfoVo);
+        return Result.ok(userInfoVo);
     }
 
 

@@ -11,9 +11,17 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @SuppressWarnings({"all"})
-public class UserAccountServiceImpl extends ServiceImpl<UserAccountMapper, UserAccount> implements UserAccountService {
+public class UserAccountServiceImpl extends ServiceImpl<UserAccountMapper, UserAccount> implements UserAccountService
+{
 
-	@Autowired
-	private UserAccountMapper userAccountMapper;
+    @Autowired
+    private UserAccountMapper userAccountMapper;
 
+    @Override
+    public void addUserAccount(Long userId)
+    {
+        UserAccount userAccount = new UserAccount();
+        userAccount.setUserId(userId);
+        userAccountMapper.insert(userAccount);
+    }
 }
