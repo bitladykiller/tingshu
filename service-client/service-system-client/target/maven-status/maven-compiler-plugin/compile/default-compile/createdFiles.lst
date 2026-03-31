@@ -1,6 +1,0 @@
-com\atguigu\tingshu\system\client\impl\SecurityLoginDegradeFeignClient.class
-com\atguigu\tingshu\system\client\SysOperLogFeignClient.class
-com\atguigu\tingshu\system\client\impl\SysLoginLogDegradeFeignClient.class
-com\atguigu\tingshu\system\client\SecurityLoginFeignClient.class
-com\atguigu\tingshu\system\client\SysLoginLogFeignClient.class
-com\atguigu\tingshu\system\client\impl\SysOperLogDegradeFeignClient.class
