@@ -22,6 +22,7 @@ import org.springframework.util.Assert;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 
@@ -49,81 +50,87 @@ public class SearchServiceImpl implements SearchService
     @Override
     public void upperAlbum(Long albumId)
     {
-        AlbumInfoIndex albumInfoIndex = new AlbumInfoIndex();
-        CompletableFuture<AlbumInfo> albumInfoCompletableFuture = CompletableFuture.supplyAsync(() ->
+
+        CompletableFuture<AlbumInfo> albumFuture = CompletableFuture.supplyAsync(() ->
                 {
-                    Result<AlbumInfo> albumInfoResult = albumInfoFeignClient.getAlbumInfo(albumId);
-                    Assert.notNull(albumInfoResult,
+                    Result<AlbumInfo> result = albumInfoFeignClient.getAlbumInfo(albumId);
+                    Assert.notNull(result,
                             "专辑返回结果为空");
-                    AlbumInfo albumInfo = albumInfoResult.getData();
-                    Assert.notNull(albumInfo,
+                    Assert.notNull(result.getData(),
                             "专辑为空");
-                    BeanUtils.copyProperties(albumInfo,
-                            albumInfoIndex);
-                    return albumInfo;
+                    return result.getData();
                 },
                 threadPoolExecutor);
 
-        CompletableFuture<Void> attributeCompletableFuture = CompletableFuture.runAsync(() ->
+        CompletableFuture<List<AttributeValueIndex>> attrFuture = CompletableFuture.supplyAsync(() ->
                 {
-                    Result<List<AlbumAttributeValue>> albumAttributeValueResult = albumInfoFeignClient.findAlbumAttributeValue(albumId);
-                    Assert.notNull(albumAttributeValueResult,
+                    Result<List<AlbumAttributeValue>> result = albumInfoFeignClient.findAlbumAttributeValue(albumId);
+                    Assert.notNull(result,
                             "专辑属性结果集为空");
-                    List<AlbumAttributeValue> albumAttributeValueList = albumAttributeValueResult.getData();
-                    Assert.notNull(albumAttributeValueList,
+                    Assert.notNull(result.getData(),
                             "专辑属性为空");
-                    List<AttributeValueIndex> attributeValueList = albumAttributeValueList.stream().map(albumAttributeValue ->
+
+                    return result.getData().stream().map(item ->
                     {
-                        AttributeValueIndex attributeValueIndex = new AttributeValueIndex();
-                        BeanUtils.copyProperties(albumAttributeValue,
-                                attributeValueIndex);
-                        return attributeValueIndex;
+                        AttributeValueIndex index = new AttributeValueIndex();
+
+                        BeanUtils.copyProperties(item,
+                                index);
+                        return index;
                     }).collect(Collectors.toList());
-                    albumInfoIndex.setAttributeValueIndexList(attributeValueList);
-
                 },
                 threadPoolExecutor);
-        CompletableFuture<Void> categoryCompletableFuture = albumInfoCompletableFuture.thenAcceptAsync(albumInfo ->
-                {
-                    Result<BaseCategoryView> baseCategoryViewResult = categoryFeignClient.getCategoryView(albumInfo.getCategory3Id());
 
-                    Assert.notNull(baseCategoryViewResult,
+        CompletableFuture<BaseCategoryView> categoryFuture = albumFuture.thenApplyAsync(albumInfo ->
+                {
+                    Result<BaseCategoryView> result = categoryFeignClient.getCategoryView(albumInfo.getCategory3Id());
+                    Assert.notNull(result,
                             "专辑分类结果集为空");
-                    BaseCategoryView baseCategoryView = baseCategoryViewResult.getData();
-                    Assert.notNull(baseCategoryView,
+                    Assert.notNull(result.getData(),
                             "专辑分类为空");
-                    albumInfoIndex.setCategory1Id(baseCategoryView.getCategory1Id());
-                    albumInfoIndex.setCategory2Id(baseCategoryView.getCategory2Id());
-                    albumInfoIndex.setCategory3Id(baseCategoryView.getCategory3Id());
+                    return result.getData();
                 },
                 threadPoolExecutor);
 
-        CompletableFuture<Void> userCompletableFuture = albumInfoCompletableFuture.thenAcceptAsync(albumInfo ->
+        CompletableFuture<UserInfoVo> userFuture = albumFuture.thenApplyAsync(albumInfo ->
                 {
-                    Result<UserInfoVo> userInfoResult = userInfoDegradeFeignClient.getUserInfoVo(albumInfo.getUserId());
-                    Assert.notNull(userInfoResult,
+                    Result<UserInfoVo> result = userInfoDegradeFeignClient.getUserInfoVo(albumInfo.getUserId());
+                    Assert.notNull(result,
                             "用户结果集为空");
-                    UserInfoVo userInfoVo = userInfoResult.getData();
-                    Assert.notNull(userInfoVo,
+                    Assert.notNull(result.getData(),
                             "用户为空");
-
-                    albumInfoIndex.setAnnouncerName(userInfoVo.getNickname());
+                    return result.getData();
                 },
                 threadPoolExecutor);
-        int playStatNum = new Random().nextInt(100000);
-        int subscribeStatNum = new Random().nextInt(100000000);
-        int buyStatNum = new Random().nextInt(10000000);
-        int commentStatNum = new Random().nextInt(1000000000);
-        albumInfoIndex.setPlayStatNum(playStatNum);
-        albumInfoIndex.setSubscribeStatNum(subscribeStatNum);
-        albumInfoIndex.setBuyStatNum(buyStatNum);
-        albumInfoIndex.setCommentStatNum(commentStatNum);
-        CompletableFuture.allOf(
-                albumInfoCompletableFuture,
-                categoryCompletableFuture,
-                attributeCompletableFuture,
-                userCompletableFuture).join();
-        albumInfoIndexRepository.save(albumInfoIndex);
 
+        CompletableFuture.allOf(albumFuture,
+                attrFuture,
+                categoryFuture,
+                userFuture).join();
+
+        AlbumInfo albumInfo = albumFuture.join();
+        List<AttributeValueIndex> attrList = attrFuture.join();
+        BaseCategoryView categoryView = categoryFuture.join();
+        UserInfoVo userInfoVo = userFuture.join();
+
+        AlbumInfoIndex albumInfoIndex = new AlbumInfoIndex();
+
+        BeanUtils.copyProperties(albumInfo,
+                albumInfoIndex);
+
+        albumInfoIndex.setAttributeValueIndexList(attrList);
+
+        albumInfoIndex.setCategory1Id(categoryView.getCategory1Id());
+        albumInfoIndex.setCategory2Id(categoryView.getCategory2Id());
+        albumInfoIndex.setCategory3Id(categoryView.getCategory3Id());
+
+        albumInfoIndex.setAnnouncerName(userInfoVo.getNickname());
+
+        albumInfoIndex.setPlayStatNum(ThreadLocalRandom.current().nextInt(100000));
+        albumInfoIndex.setSubscribeStatNum(ThreadLocalRandom.current().nextInt(100000000));
+        albumInfoIndex.setBuyStatNum(ThreadLocalRandom.current().nextInt(10000000));
+        albumInfoIndex.setCommentStatNum(ThreadLocalRandom.current().nextInt(1000000000));
+
+        albumInfoIndexRepository.save(albumInfoIndex);
     }
 }
