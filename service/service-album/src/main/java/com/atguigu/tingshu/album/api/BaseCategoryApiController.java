@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.atguigu.tingshu.album.service.BaseCategoryService;
 import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.model.album.BaseAttribute;
+import com.atguigu.tingshu.model.album.BaseCategoryView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,13 @@ public class BaseCategoryApiController {
 		return Result.ok(list);
 	}
 
+	@Operation(summary = "根据三级分类的名称查询到一级分类和二级分裂")
+	@GetMapping("getCategoryView/{category3Id}")
+	public Result<BaseCategoryView> getCategoryView(@PathVariable("category3Id") Long category3Id)
+	{
+		BaseCategoryView baseCategoryView = baseCategoryService.getCategoryView(category3Id);
+		return Result.ok(baseCategoryView);
+	}
 
 
 }

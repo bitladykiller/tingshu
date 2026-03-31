@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -51,7 +52,8 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
     public void saveAlbumInfo(AlbumInfoVo albumInfoVo)
     {
         AlbumInfo albumInfo = new AlbumInfo();
-        BeanUtils.copyProperties(albumInfoVo, albumInfo);
+        BeanUtils.copyProperties(albumInfoVo,
+                albumInfo);
 
         //TODO userId 用户 id 需要完善
         albumInfo.setUserId(1L);
@@ -65,51 +67,62 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
         List<AlbumAttributeValue> albumAttributeValues = albumAttributeValueVoList.stream().map(albumAttributeValueVo ->
         {
             AlbumAttributeValue albumAttributeValue = new AlbumAttributeValue();
-            BeanUtils.copyProperties(albumAttributeValueVo, albumAttributeValue);
+            BeanUtils.copyProperties(albumAttributeValueVo,
+                    albumAttributeValue);
             albumAttributeValue.setAlbumId(albumInfo.getId());
             return albumAttributeValue;
         }).collect(Collectors.toList());
         albumAttributeValueService.saveBatch(albumAttributeValues);
 
-        this.saveAlbumStat(albumInfo.getId(), SystemConstant.ALBUM_STAT_PLAY);
-        this.saveAlbumStat(albumInfo.getId(), SystemConstant.ALBUM_STAT_BROWSE);
-        this.saveAlbumStat(albumInfo.getId(), SystemConstant.ALBUM_STAT_COMMENT);
-        this.saveAlbumStat(albumInfo.getId(), SystemConstant.ALBUM_STAT_SUBSCRIBE);
+        this.saveAlbumStat(albumInfo.getId(),
+                SystemConstant.ALBUM_STAT_PLAY);
+        this.saveAlbumStat(albumInfo.getId(),
+                SystemConstant.ALBUM_STAT_BROWSE);
+        this.saveAlbumStat(albumInfo.getId(),
+                SystemConstant.ALBUM_STAT_COMMENT);
+        this.saveAlbumStat(albumInfo.getId(),
+                SystemConstant.ALBUM_STAT_SUBSCRIBE);
 
     }
 
     @Override
-    public IPage<AlbumInfoVo> selectAlbumPage(Page<AlbumInfoVo> pageParam, AlbumInfoQuery albumInfoQuery)
+    public IPage<AlbumInfoVo> selectAlbumPage(Page<AlbumInfoVo> pageParam,
+                                              AlbumInfoQuery albumInfoQuery)
     {
-        return albumInfoMapper.selectAlbumPage(pageParam , albumInfoQuery);
+        return albumInfoMapper.selectAlbumPage(pageParam,
+                albumInfoQuery);
     }
 
     @Override
     public void removeAlbumInfo(String albumId)
     {
         LambdaQueryWrapper<TrackInfo> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TrackInfo::getAlbumId, albumId);
+        queryWrapper.eq(TrackInfo::getAlbumId,
+                albumId);
         Long count = trackInfoMapper.selectCount(queryWrapper);
-        if(count > 0)
+        if (count > 0)
         {
             throw new RuntimeException("专辑下有声音，请先删除专辑下的声音");
         }
         albumInfoMapper.deleteById(albumId);
         LambdaQueryWrapper<AlbumAttributeValue> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(AlbumAttributeValue::getAlbumId, albumId);
+        lambdaQueryWrapper.eq(AlbumAttributeValue::getAlbumId,
+                albumId);
         albumAttributeValueMapper.delete(lambdaQueryWrapper);
         LambdaQueryWrapper<AlbumStat> lambdaQueryWrapper1 = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper1.eq(AlbumStat::getAlbumId, albumId);
+        lambdaQueryWrapper1.eq(AlbumStat::getAlbumId,
+                albumId);
         albumStatMapper.delete(lambdaQueryWrapper1);
     }
 
 
     @Override
-    public AlbumInfo getAlbumInfo(String albumId)
+    public AlbumInfo getAlbumInfo(Long albumId)
     {
         AlbumInfo albumInfo = albumInfoMapper.selectById(albumId);
         LambdaQueryWrapper<AlbumAttributeValue> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(AlbumAttributeValue::getAlbumId, albumId);
+        queryWrapper.eq(AlbumAttributeValue::getAlbumId,
+                albumId);
         List<AlbumAttributeValue> albumAttributeValues = albumAttributeValueMapper.selectList(queryWrapper);
         albumInfo.setAlbumAttributeValueVoList(albumAttributeValues);
         return albumInfo;
@@ -117,21 +130,25 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateAlbumInfo(Long albumId, AlbumInfoVo albumInfoVo)
+    public void updateAlbumInfo(Long albumId,
+                                AlbumInfoVo albumInfoVo)
     {
         AlbumInfo albumInfo = albumInfoMapper.selectById(albumId);
-        BeanUtils.copyProperties(albumInfoVo, albumInfo);
+        BeanUtils.copyProperties(albumInfoVo,
+                albumInfo);
         albumInfoMapper.updateById(albumInfo);
         List<AlbumAttributeValueVo> albumAttributeValueVoList = albumInfoVo.getAlbumAttributeValueVoList();
         LambdaQueryWrapper<AlbumAttributeValue> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(AlbumAttributeValue::getAlbumId, albumId);
+        queryWrapper.eq(AlbumAttributeValue::getAlbumId,
+                albumId);
         albumAttributeValueMapper.delete(queryWrapper);
-        if(!CollectionUtils.isEmpty(albumAttributeValueVoList))
+        if (!CollectionUtils.isEmpty(albumAttributeValueVoList))
         {
             List<AlbumAttributeValue> albumAttributeValues = albumAttributeValueVoList.stream().map(albumAttributeValueVo ->
             {
                 AlbumAttributeValue albumAttributeValue = new AlbumAttributeValue();
-                BeanUtils.copyProperties(albumAttributeValueVo, albumAttributeValue);
+                BeanUtils.copyProperties(albumAttributeValueVo,
+                        albumAttributeValue);
                 albumAttributeValue.setAlbumId(albumId);
                 return albumAttributeValue;
             }).collect(Collectors.toList());
@@ -143,18 +160,40 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
     @Override
     public List<AlbumInfo> findUserAllAlbumList(Long userId)
     {
-        Page<AlbumInfo> pageParam = new Page(1, 100);
+        Page<AlbumInfo> pageParam = new Page(1,
+                100);
         LambdaQueryWrapper<AlbumInfo> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.select(AlbumInfo::getId, AlbumInfo::getAlbumTitle);
-        queryWrapper.eq(AlbumInfo::getUserId, userId);
+        queryWrapper.select(AlbumInfo::getId,
+                AlbumInfo::getAlbumTitle);
+        queryWrapper.eq(AlbumInfo::getUserId,
+                userId);
         queryWrapper.orderByDesc(AlbumInfo::getId);
-        IPage<AlbumInfo> albumInfoPage = albumInfoMapper.selectPage(pageParam, queryWrapper);
+        IPage<AlbumInfo> albumInfoPage = albumInfoMapper.selectPage(pageParam,
+                queryWrapper);
         return albumInfoPage.getRecords();
 
     }
 
+    @Override
+    public Map<String, Object> getAlbumInfoStat(Long albumId)
+    {
+        return albumStatMapper.getAlbumInfoStat(albumId);
+    }
 
-    private void saveAlbumStat(Long albumId, String statType)
+    @Override
+    public List<AlbumAttributeValue> findAlbumAttributeValueByAlbumId(Long albumId)
+    {
+        LambdaQueryWrapper<AlbumAttributeValue> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(AlbumAttributeValue::getAlbumId,
+                albumId);
+        List<AlbumAttributeValue> albumAttributeValueList = albumAttributeValueMapper.selectList(lambdaQueryWrapper);
+        //	返回集合数据
+        return albumAttributeValueList;
+    }
+
+
+    private void saveAlbumStat(Long albumId,
+                               String statType)
     {
         AlbumStat albumStat = new AlbumStat();
         albumStat.setAlbumId(albumId);

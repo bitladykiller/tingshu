@@ -2,6 +2,7 @@ package com.atguigu.tingshu.album.api;
 
 import com.atguigu.tingshu.album.service.AlbumInfoService;
 import com.atguigu.tingshu.common.result.Result;
+import com.atguigu.tingshu.model.album.AlbumAttributeValue;
 import com.atguigu.tingshu.model.album.AlbumInfo;
 import com.atguigu.tingshu.query.album.AlbumInfoQuery;
 import com.atguigu.tingshu.vo.album.AlbumInfoVo;
@@ -15,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "专辑管理")
 @RestController
@@ -40,8 +42,10 @@ public class AlbumInfoApiController
                                     @PathVariable Long limit,
                                     @RequestBody(required = false) AlbumInfoQuery albumInfoQuery)
     {
-        Page<AlbumInfoVo> pageParam = new Page<>(page, limit);
-        IPage<AlbumInfoVo> pageModel = albumInfoService.selectAlbumPage(pageParam, albumInfoQuery);
+        Page<AlbumInfoVo> pageParam = new Page<>(page,
+                limit);
+        IPage<AlbumInfoVo> pageModel = albumInfoService.selectAlbumPage(pageParam,
+                albumInfoQuery);
         return Result.ok(pageModel);
     }
 
@@ -55,7 +59,7 @@ public class AlbumInfoApiController
 
     @Operation(summary = "查询专辑信息")
     @GetMapping("getAlbumInfo/{albumId}")
-    public Result getAlbumInfo(@PathVariable String albumId)
+    public Result getAlbumInfo(@PathVariable Long albumId)
     {
         AlbumInfo albumInfo = albumInfoService.getAlbumInfo(albumId);
         return Result.ok(albumInfo);
@@ -63,9 +67,11 @@ public class AlbumInfoApiController
 
     @Operation(summary = "更新专辑信息")
     @PutMapping("updateAlbumInfo/{albumID}")
-    public Result updateAlbumInfo(@PathVariable Long albumId, @RequestBody @Validated AlbumInfoVo albumInfoVo)
+    public Result updateAlbumInfo(@PathVariable Long albumId,
+                                  @RequestBody @Validated AlbumInfoVo albumInfoVo)
     {
-        albumInfoService.updateAlbumInfo(albumId, albumInfoVo);
+        albumInfoService.updateAlbumInfo(albumId,
+                albumInfoVo);
         return Result.ok();
     }
 
@@ -79,6 +85,22 @@ public class AlbumInfoApiController
         return Result.ok(albumInfoList);
     }
 
+    @Operation(summary = "根据专辑的ID查询相关的专辑的状态")
+    @GetMapping("getAlbumInfoStat/{albumId}")
+    public Result getAlbumInfoStat(@PathVariable Long albumId)
+    {
+        Map<String, Object> stat = albumInfoService.getAlbumInfoStat(albumId);
+        return Result.ok(stat);
+    }
+
+    @Operation(summary = "获取专辑属性值列表")
+    @GetMapping("findAlbumAttributeValue/{albumId}")
+    public Result<List<AlbumAttributeValue>> findAlbumAttributeValue(@PathVariable Long albumId)
+    {
+        //	获取到专辑属性集合
+        List<AlbumAttributeValue> albumAttributeValueList = albumInfoService.findAlbumAttributeValueByAlbumId(albumId);
+        return Result.ok(albumAttributeValueList);
+    }
 
 }
 
