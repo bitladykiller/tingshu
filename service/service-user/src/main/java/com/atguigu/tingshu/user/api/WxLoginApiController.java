@@ -92,5 +92,19 @@ public class WxLoginApiController
         return Result.ok(userInfoVo);
     }
 
+    @GuiGuLogin
+    @Operation(summary = "更新用户信息")
+    @PostMapping("updateUser")
+    public Result updateUser(@RequestBody UserInfoVo userInfoVo)
+    {
+        Long userId = AuthContextHolder.getUserId();
+        UserInfo userInfo = new UserInfo();
+        userInfo.setId(userId);
+        userInfo.setNickname(userInfoVo.getNickname());
+        userInfo.setAvatarUrl(userInfoVo.getAvatarUrl());
+        userInfoService.updateById(userInfo);
+        return Result.ok();
+    }
+
 
 }
