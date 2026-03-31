@@ -28,5 +28,25 @@ public class SearchApiController
         return Result.ok();
     }
 
+    @Operation(summary = "下架专辑")
+    @GetMapping("lowerAlbum/{albumId}")
+    public Result lowerAlbum(@PathVariable Long albumId)
+    {
+        searchService.lowerAlbum(albumId);
+        return Result.ok();
+    }
+
+    @Operation(summary = "批量上架")
+    @GetMapping("batchUpperAlbum")
+    public Result batchUpperAlbum()
+    {
+        //  循环
+        for (long i = 1; i <= 1500; i++)
+        {
+            searchService.upperAlbum(i);
+        }
+        //  返回数据
+        return Result.ok();
+    }
 }
 

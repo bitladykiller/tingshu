@@ -1,0 +1,6 @@
+com\atguigu\tingshu\album\client\CategoryFeignClient.class
+com\atguigu\tingshu\album\client\impl\TrackInfoDegradeFeignClient.class
+com\atguigu\tingshu\album\client\AlbumInfoFeignClient.class
+com\atguigu\tingshu\album\client\impl\CategoryDegradeFeignClient.class
+com\atguigu\tingshu\album\client\TrackInfoFeignClient.class
+com\atguigu\tingshu\album\client\impl\AlbumInfoDegradeFeignClient.class

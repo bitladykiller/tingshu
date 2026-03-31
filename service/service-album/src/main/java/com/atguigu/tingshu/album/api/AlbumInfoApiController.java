@@ -51,7 +51,7 @@ public class AlbumInfoApiController
 
     @Operation(summary = "删除专辑信息")
     @DeleteMapping("removeAlbumInfo/{albumId}")
-    public Result removeAlbumInfo(@PathVariable String albumId)
+    public Result removeAlbumInfo(@PathVariable Long albumId)
     {
         albumInfoService.removeAlbumInfo(albumId);
         return Result.ok();
@@ -101,6 +101,7 @@ public class AlbumInfoApiController
         List<AlbumAttributeValue> albumAttributeValueList = albumInfoService.findAlbumAttributeValueByAlbumId(albumId);
         return Result.ok(albumAttributeValueList);
     }
+
 
 }
 

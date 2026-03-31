@@ -1,0 +1,6 @@
+com\atguigu\tingshu\user\client\impl\UserInfoDegradeFeignClient.class
+com\atguigu\tingshu\user\client\impl\VipServiceConfigDegradeFeignClient.class
+com\atguigu\tingshu\user\client\VipServiceConfigFeignClient.class
+com\atguigu\tingshu\user\client\impl\UserListenProcessDegradeFeignClient.class
+com\atguigu\tingshu\user\client\UserInfoFeignClient.class
+com\atguigu\tingshu\user\client\UserListenProcessFeignClient.class

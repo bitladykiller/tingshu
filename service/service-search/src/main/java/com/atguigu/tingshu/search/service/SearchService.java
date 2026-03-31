@@ -4,4 +4,6 @@ public interface SearchService {
 
 
     void upperAlbum(Long albumId);
+
+    void lowerAlbum(Long albumId);
 }

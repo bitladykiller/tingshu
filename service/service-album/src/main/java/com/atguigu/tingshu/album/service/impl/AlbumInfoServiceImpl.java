@@ -7,6 +7,8 @@ import com.atguigu.tingshu.album.mapper.TrackInfoMapper;
 import com.atguigu.tingshu.album.service.AlbumAttributeValueService;
 import com.atguigu.tingshu.album.service.AlbumInfoService;
 import com.atguigu.tingshu.common.constant.SystemConstant;
+import com.atguigu.tingshu.common.rabbit.constant.MqConst;
+import com.atguigu.tingshu.common.rabbit.service.RabbitService;
 import com.atguigu.tingshu.model.album.AlbumAttributeValue;
 import com.atguigu.tingshu.model.album.AlbumInfo;
 import com.atguigu.tingshu.model.album.AlbumStat;
@@ -46,6 +48,8 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
     private AlbumAttributeValueService albumAttributeValueService;
     @Autowired
     private TrackInfoMapper trackInfoMapper;
+    @Autowired
+    private RabbitService rabbitService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -82,6 +86,10 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
                 SystemConstant.ALBUM_STAT_COMMENT);
         this.saveAlbumStat(albumInfo.getId(),
                 SystemConstant.ALBUM_STAT_SUBSCRIBE);
+        String isOpen = albumInfo.getIsOpen();
+        if ("1".equals(isOpen))
+            rabbitService.sendMessage(MqConst.EXCHANGE_ALBUM, MqConst.ROUTING_ALBUM_UPPER, albumInfo.getId());
+
 
     }
 
@@ -94,7 +102,7 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
     }
 
     @Override
-    public void removeAlbumInfo(String albumId)
+    public void removeAlbumInfo(Long albumId)
     {
         LambdaQueryWrapper<TrackInfo> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(TrackInfo::getAlbumId,
@@ -113,6 +121,7 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
         lambdaQueryWrapper1.eq(AlbumStat::getAlbumId,
                 albumId);
         albumStatMapper.delete(lambdaQueryWrapper1);
+        rabbitService.sendMessage(MqConst.EXCHANGE_ALBUM, MqConst.ROUTING_ALBUM_LOWER, albumId);
     }
 
 
@@ -144,14 +153,15 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
         albumAttributeValueMapper.delete(queryWrapper);
         if (!CollectionUtils.isEmpty(albumAttributeValueVoList))
         {
-            List<AlbumAttributeValue> albumAttributeValues = albumAttributeValueVoList.stream().map(albumAttributeValueVo ->
-            {
-                AlbumAttributeValue albumAttributeValue = new AlbumAttributeValue();
-                BeanUtils.copyProperties(albumAttributeValueVo,
-                        albumAttributeValue);
-                albumAttributeValue.setAlbumId(albumId);
-                return albumAttributeValue;
-            }).collect(Collectors.toList());
+            List<AlbumAttributeValue> albumAttributeValues =
+                    albumAttributeValueVoList.stream().map(albumAttributeValueVo ->
+                    {
+                        AlbumAttributeValue albumAttributeValue = new AlbumAttributeValue();
+                        BeanUtils.copyProperties(albumAttributeValueVo,
+                                albumAttributeValue);
+                        albumAttributeValue.setAlbumId(albumId);
+                        return albumAttributeValue;
+                    }).collect(Collectors.toList());
             albumAttributeValueService.saveBatch(albumAttributeValues);
         }
 

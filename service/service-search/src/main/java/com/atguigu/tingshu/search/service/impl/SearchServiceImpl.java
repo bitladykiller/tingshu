@@ -47,9 +47,11 @@ public class SearchServiceImpl implements SearchService
     @Autowired
     private ThreadPoolExecutor threadPoolExecutor;
 
+
     @Override
     public void upperAlbum(Long albumId)
     {
+
 
         CompletableFuture<AlbumInfo> albumFuture = CompletableFuture.supplyAsync(() ->
                 {
@@ -132,5 +134,11 @@ public class SearchServiceImpl implements SearchService
         albumInfoIndex.setCommentStatNum(ThreadLocalRandom.current().nextInt(1000000000));
 
         albumInfoIndexRepository.save(albumInfoIndex);
+    }
+
+    @Override
+    public void lowerAlbum(Long albumId)
+    {
+        albumInfoIndexRepository.deleteById(albumId);
     }
 }
