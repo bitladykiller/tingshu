@@ -11,6 +11,7 @@ import com.atguigu.tingshu.common.constant.SystemConstant;
 import com.atguigu.tingshu.common.execption.GuiguException;
 import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.common.result.ResultCodeEnum;
+import com.atguigu.tingshu.common.util.AuthContextHolder;
 import com.atguigu.tingshu.model.album.AlbumInfo;
 import com.atguigu.tingshu.model.album.TrackInfo;
 import com.atguigu.tingshu.model.album.TrackStat;
@@ -39,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -108,7 +110,7 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
         //需要手动设置
         //用户id
         //TODO 后续完善登录功能之后需要来这个改善这个逻辑的
-        trackInfo.setUserId(1L);
+        trackInfo.setUserId(AuthContextHolder.getUserId());
 
 
         LambdaQueryWrapper<TrackInfo> wrapper = new LambdaQueryWrapper<TrackInfo>();
