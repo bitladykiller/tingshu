@@ -3,6 +3,7 @@ package com.atguigu.tingshu.album.mapper;
 import com.atguigu.tingshu.model.album.AlbumInfo;
 import com.atguigu.tingshu.query.album.AlbumInfoQuery;
 import com.atguigu.tingshu.vo.album.AlbumInfoVo;
+import com.atguigu.tingshu.vo.album.AlbumStatVo;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -13,4 +14,6 @@ import org.apache.ibatis.annotations.Param;
 public interface AlbumInfoMapper extends BaseMapper<AlbumInfo> {
 
     IPage<AlbumInfoVo> selectAlbumPage(Page<AlbumInfoVo> pageParam,@Param("vo") AlbumInfoQuery albumInfoQuery);
+
+    AlbumStatVo selectAlbumStat(@Param("albumId") Long albumId);
 }

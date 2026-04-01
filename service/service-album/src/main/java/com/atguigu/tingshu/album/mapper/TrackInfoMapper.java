@@ -2,6 +2,7 @@ package com.atguigu.tingshu.album.mapper;
 
 import com.atguigu.tingshu.model.album.TrackInfo;
 import com.atguigu.tingshu.query.album.TrackInfoQuery;
+import com.atguigu.tingshu.vo.album.AlbumTrackListVo;
 import com.atguigu.tingshu.vo.album.TrackListVo;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -10,10 +11,16 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface TrackInfoMapper extends BaseMapper<TrackInfo> {
+public interface TrackInfoMapper extends BaseMapper<TrackInfo>
+{
 
 
-    IPage<TrackListVo> selectUserTrackPage(Page<TrackListVo> trackListVoPage, @Param("vo") TrackInfoQuery trackInfoQuery);
+    IPage<TrackListVo> selectUserTrackPage(Page<TrackListVo> trackListVoPage,
+                                           @Param("vo") TrackInfoQuery trackInfoQuery);
 
-    void updateTrackNum(@Param("albumId") Long albumId, @Param("orderNum") Integer orderNum);
+    void updateTrackNum(@Param("albumId") Long albumId,
+                        @Param("orderNum") Integer orderNum);
+
+    IPage<AlbumTrackListVo> selectAlbumTrackPage(Page<AlbumTrackListVo> pageParam,
+                                                 @Param("albumId") Long albumId);
 }

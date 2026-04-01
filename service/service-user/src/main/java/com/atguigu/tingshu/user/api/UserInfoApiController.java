@@ -1,6 +1,8 @@
 package com.atguigu.tingshu.user.api;
 
+import com.atguigu.tingshu.common.login.GuiGuLogin;
 import com.atguigu.tingshu.common.result.Result;
+import com.atguigu.tingshu.common.util.AuthContextHolder;
 import com.atguigu.tingshu.model.user.UserInfo;
 import com.atguigu.tingshu.user.service.UserInfoService;
 import com.atguigu.tingshu.vo.user.UserInfoVo;
@@ -8,10 +10,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @Tag(name = "用户管理接口")
 @RestController
@@ -30,8 +32,22 @@ public class UserInfoApiController
         // 获取用户信息
         UserInfo userInfo = userInfoService.getById(userId);
         UserInfoVo userInfoVo = new UserInfoVo();
-        BeanUtils.copyProperties(userInfo, userInfoVo);
+        BeanUtils.copyProperties(userInfo,
+                userInfoVo);
         return Result.ok(userInfoVo);
+    }
+
+    @GuiGuLogin(required = false)
+    @Operation(summary = "判断用户是否购买声音列表")
+    @PostMapping("userIsPaidTrack/{albumId}")
+    public Result<Map<Long, Integer>> userIsPaidTrack(@PathVariable Long albumId,
+                                                      @RequestBody List<Long> trackIdList)
+    {
+        Long userId = AuthContextHolder.getUserId();
+        Map<Long, Integer> map = userInfoService.userIsPaidTrack(userId,
+                albumId,
+                trackIdList);
+        return Result.ok(map);
     }
 
 }

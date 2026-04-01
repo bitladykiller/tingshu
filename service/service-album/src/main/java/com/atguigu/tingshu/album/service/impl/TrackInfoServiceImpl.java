@@ -9,16 +9,21 @@ import com.atguigu.tingshu.album.service.TrackInfoService;
 import com.atguigu.tingshu.album.service.VodService;
 import com.atguigu.tingshu.common.constant.SystemConstant;
 import com.atguigu.tingshu.common.execption.GuiguException;
+import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.common.result.ResultCodeEnum;
 import com.atguigu.tingshu.model.album.AlbumInfo;
 import com.atguigu.tingshu.model.album.TrackInfo;
 import com.atguigu.tingshu.model.album.TrackStat;
 import com.atguigu.tingshu.query.album.TrackInfoQuery;
+import com.atguigu.tingshu.user.client.impl.UserInfoDegradeFeignClient;
+import com.atguigu.tingshu.vo.album.AlbumTrackListVo;
 import com.atguigu.tingshu.vo.album.TrackInfoVo;
 import com.atguigu.tingshu.vo.album.TrackListVo;
 import com.atguigu.tingshu.vo.album.TrackMediaInfoVo;
+import com.atguigu.tingshu.vo.user.UserInfoVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import io.minio.BucketExistsArgs;
@@ -31,10 +36,13 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -52,6 +60,10 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
     private AlbumInfoMapper albumInfoMapper;
     @Autowired
     private TrackStatMapper trackStatMapper;
+    @Autowired
+    private UserInfoDegradeFeignClient userInfoFeignClient;
+    @Autowired
+    private AlbumInfoService albumInfoService;
 
 
     @Override
@@ -159,23 +171,97 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
     }
 
     @Override
-   public void updateTrackInfo(Long id, TrackInfoVo trackInfoVo) {
-     TrackInfo trackInfo = this.getById(id);
-     String mediaFileId = trackInfo.getMediaFileId();
-     BeanUtils.copyProperties(trackInfoVo, trackInfo);
-     if (!trackInfoVo.getMediaFileId().equals(mediaFileId)) {
-       TrackMediaInfoVo trackMediaInfoVo = vodService.getmediaInfoByFileId(trackInfoVo.getMediaFileId());
-       if (null==trackMediaInfoVo){
-         throw new GuiguException(ResultCodeEnum.VOD_FILE_ID_ERROR);
-       }
-       trackInfo.setMediaUrl(trackMediaInfoVo.getMediaUrl());
-       trackInfo.setMediaType(trackMediaInfoVo.getType());
-       trackInfo.setMediaDuration(trackMediaInfoVo.getDuration());
-       trackInfo.setMediaSize(trackMediaInfoVo.getSize());
-       vodService.removeTrack(mediaFileId);
-     }
-     this.updateById(trackInfo);
-   }
+    public void updateTrackInfo(Long id,
+                                TrackInfoVo trackInfoVo)
+    {
+        TrackInfo trackInfo = this.getById(id);
+        String mediaFileId = trackInfo.getMediaFileId();
+        BeanUtils.copyProperties(trackInfoVo,
+                trackInfo);
+        if (!trackInfoVo.getMediaFileId().equals(mediaFileId))
+        {
+            TrackMediaInfoVo trackMediaInfoVo = vodService.getmediaInfoByFileId(trackInfoVo.getMediaFileId());
+            if (null == trackMediaInfoVo)
+            {
+                throw new GuiguException(ResultCodeEnum.VOD_FILE_ID_ERROR);
+            }
+            trackInfo.setMediaUrl(trackMediaInfoVo.getMediaUrl());
+            trackInfo.setMediaType(trackMediaInfoVo.getType());
+            trackInfo.setMediaDuration(trackMediaInfoVo.getDuration());
+            trackInfo.setMediaSize(trackMediaInfoVo.getSize());
+            vodService.removeTrack(mediaFileId);
+        }
+        this.updateById(trackInfo);
+    }
+
+    @Override
+    public IPage<AlbumTrackListVo> findAlbumTrackPage(Page<AlbumTrackListVo> pageParam,
+                                                      Long albumId,
+                                                      Long userId)
+    {
+        IPage<AlbumTrackListVo> pageInfo = trackInfoMapper.selectAlbumTrackPage(pageParam,
+                albumId);
+
+        AlbumInfo albumInfo = albumInfoService.getById(albumId);
+        Assert.notNull(albumInfo,
+                "专辑对象不能为空");
+        if (null == userId)
+        {
+            if (!SystemConstant.ALBUM_PAY_TYPE_FREE.equals(albumInfo.getPayType()))
+            {
+                List<AlbumTrackListVo> albumTrackNeedPaidListVoList = pageInfo.getRecords().stream().filter(albumTrackListVo -> albumTrackListVo.getOrderNum().intValue() > albumInfo.getTracksForFree()).collect(Collectors.toList());
+                if (!CollectionUtils.isEmpty(albumTrackNeedPaidListVoList))
+                {
+                    albumTrackNeedPaidListVoList.forEach(albumTrackListVo ->
+                    {
+                        albumTrackListVo.setIsShowPaidMark(true);
+                    });
+                }
+            }
+        } else
+        {
+            boolean isNeedPaid = false;
+            if (SystemConstant.ALBUM_PAY_TYPE_VIPFREE.equals(albumInfo.getPayType()))
+            {
+                Result<UserInfoVo> userInfoVoResult = userInfoFeignClient.getUserInfoVo(userId);
+                Assert.notNull(userInfoVoResult,
+                        "用户信息不能为空");
+                UserInfoVo userInfoVo = userInfoVoResult.getData();
+                if (userInfoVo.getIsVip().intValue() == 0)
+                {
+                    isNeedPaid = true;
+                }
+                if (userInfoVo.getIsVip().intValue() == 1 && userInfoVo.getVipExpireTime().before(new Date()))
+                {
+                    isNeedPaid = true;
+                }
+            } else if (SystemConstant.ALBUM_PAY_TYPE_REQUIRE.equals(albumInfo.getPayType()))
+            {
+                isNeedPaid = true;
+            }
+            if (isNeedPaid)
+            {
+                List<AlbumTrackListVo> albumTrackNeedPaidListVoList = pageInfo.getRecords().stream().filter(albumTrackListVo -> albumTrackListVo.getOrderNum().intValue() > albumInfo.getTracksForFree()).collect(Collectors.toList());
+                if (!CollectionUtils.isEmpty(albumTrackNeedPaidListVoList))
+                {
+                    List<Long> trackIdList = albumTrackNeedPaidListVoList.stream().map(AlbumTrackListVo::getTrackId).collect(Collectors.toList());
+                    Result<Map<Long, Integer>> mapResult = userInfoFeignClient.userIsPaidTrack(albumId,
+                            trackIdList);
+                    Assert.notNull(mapResult,
+                            "声音集合不能为空.");
+                    Map<Long, Integer> map = mapResult.getData();
+                    Assert.notNull(map,
+                            "map集合不能为空.");
+                    albumTrackNeedPaidListVoList.forEach(albumTrackListVo ->
+                    {
+                        boolean isBuy = map.get(albumTrackListVo.getTrackId()) == 1 ? false : true;
+                        albumTrackListVo.setIsShowPaidMark(isBuy);
+                    });
+                }
+            }
+        }
+        return pageInfo;
+    }
 
     private void saveTrackStat(Long trackId,
                                String trackType)

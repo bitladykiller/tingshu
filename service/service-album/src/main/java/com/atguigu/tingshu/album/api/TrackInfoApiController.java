@@ -2,10 +2,12 @@ package com.atguigu.tingshu.album.api;
 
 import com.atguigu.tingshu.album.service.TrackInfoService;
 import com.atguigu.tingshu.album.service.VodService;
+import com.atguigu.tingshu.common.login.GuiGuLogin;
 import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.common.util.AuthContextHolder;
 import com.atguigu.tingshu.model.album.TrackInfo;
 import com.atguigu.tingshu.query.album.TrackInfoQuery;
+import com.atguigu.tingshu.vo.album.AlbumTrackListVo;
 import com.atguigu.tingshu.vo.album.TrackInfoVo;
 import com.atguigu.tingshu.vo.album.TrackListVo;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -91,6 +93,26 @@ public class TrackInfoApiController
         trackInfoService.updateTrackInfo(id,
                 trackInfoVo);
         return Result.ok();
+    }
+
+    @GuiGuLogin(required = false)
+    @Operation(summary = "获取专辑声音分页列表")
+    @GetMapping("findAlbumTrackPage/{albumId}/{page}/{limit}")
+    public Result<IPage<AlbumTrackListVo>> findAlbumTrackPage(
+            @Parameter(name = "albumId", description = "专辑id", required = true)
+            @PathVariable Long albumId,
+            @Parameter(name = "page", description = "当前页码", required = true)
+            @PathVariable Long page,
+            @Parameter(name = "limit", description = "每页记录数", required = true)
+            @PathVariable Long limit)
+    {
+        Long userId = AuthContextHolder.getUserId();
+        Page<AlbumTrackListVo> pageParam = new Page<>(page,
+                limit);
+        IPage<AlbumTrackListVo> pageModel = trackInfoService.findAlbumTrackPage(pageParam,
+                albumId,
+                userId);
+        return Result.ok(pageModel);
     }
 
 }

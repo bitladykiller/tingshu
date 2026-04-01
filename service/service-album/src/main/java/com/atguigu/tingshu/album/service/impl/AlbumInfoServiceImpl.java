@@ -16,6 +16,7 @@ import com.atguigu.tingshu.model.album.TrackInfo;
 import com.atguigu.tingshu.query.album.AlbumInfoQuery;
 import com.atguigu.tingshu.vo.album.AlbumAttributeValueVo;
 import com.atguigu.tingshu.vo.album.AlbumInfoVo;
+import com.atguigu.tingshu.vo.album.AlbumStatVo;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -88,7 +89,9 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
                 SystemConstant.ALBUM_STAT_SUBSCRIBE);
         String isOpen = albumInfo.getIsOpen();
         if ("1".equals(isOpen))
-            rabbitService.sendMessage(MqConst.EXCHANGE_ALBUM, MqConst.ROUTING_ALBUM_UPPER, albumInfo.getId());
+            rabbitService.sendMessage(MqConst.EXCHANGE_ALBUM,
+                    MqConst.ROUTING_ALBUM_UPPER,
+                    albumInfo.getId());
 
 
     }
@@ -121,7 +124,9 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
         lambdaQueryWrapper1.eq(AlbumStat::getAlbumId,
                 albumId);
         albumStatMapper.delete(lambdaQueryWrapper1);
-        rabbitService.sendMessage(MqConst.EXCHANGE_ALBUM, MqConst.ROUTING_ALBUM_LOWER, albumId);
+        rabbitService.sendMessage(MqConst.EXCHANGE_ALBUM,
+                MqConst.ROUTING_ALBUM_LOWER,
+                albumId);
     }
 
 
@@ -199,6 +204,13 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
         List<AlbumAttributeValue> albumAttributeValueList = albumAttributeValueMapper.selectList(lambdaQueryWrapper);
         //	返回集合数据
         return albumAttributeValueList;
+    }
+
+    @Override
+    public AlbumStatVo getAlbumStatVoByAlbumId(Long albumId)
+    {
+        //	调用mapper 层方法
+        return albumInfoMapper.selectAlbumStat(albumId);
     }
 
 

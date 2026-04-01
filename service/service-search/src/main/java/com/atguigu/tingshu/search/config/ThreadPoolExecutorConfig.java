@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 public class ThreadPoolExecutorConfig {
     @Bean
     public ThreadPoolExecutor threadPoolExecutor(){
-        //  创建线程池--自定义线程池.
         return new ThreadPoolExecutor(
                 8,
                 16,
