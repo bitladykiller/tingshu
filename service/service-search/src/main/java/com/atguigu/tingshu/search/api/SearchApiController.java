@@ -75,5 +75,13 @@ public class SearchApiController
         }
         return Result.ok(mapList);
     }
+
+    @Operation(summary = "关键字自动补全")
+    @GetMapping("completeSuggest/{keyword}")
+    public Result completeSuggest(@PathVariable String keyword)
+    {
+        List<String> list = searchService.completeSuggest(keyword);
+        return Result.ok(list);
+    }
 }
 

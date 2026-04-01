@@ -17,4 +17,6 @@ public interface SearchService {
     AlbumSearchResponseVo search(AlbumIndexQuery albumIndexQuery);
 
     List<Map<String, Object>> channel(Long category1Id) throws IOException;
+
+    List<String> completeSuggest(String keyword);
 }

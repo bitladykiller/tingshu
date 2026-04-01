@@ -5,24 +5,28 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.NestedQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.CompletionSuggest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.elasticsearch.core.search.Suggestion;
 import com.alibaba.fastjson.JSON;
 import com.atguigu.tingshu.album.client.AlbumInfoFeignClient;
 import com.atguigu.tingshu.album.client.CategoryFeignClient;
 import com.atguigu.tingshu.common.result.Result;
+import com.atguigu.tingshu.common.util.PinYinUtils;
 import com.atguigu.tingshu.model.album.AlbumAttributeValue;
 import com.atguigu.tingshu.model.album.AlbumInfo;
 import com.atguigu.tingshu.model.album.BaseCategory3;
 import com.atguigu.tingshu.model.album.BaseCategoryView;
 import com.atguigu.tingshu.model.search.AlbumInfoIndex;
 import com.atguigu.tingshu.model.search.AttributeValueIndex;
+import com.atguigu.tingshu.model.search.SuggestIndex;
 import com.atguigu.tingshu.query.search.AlbumIndexQuery;
 import com.atguigu.tingshu.search.repository.AlbumInfoIndexRepository;
+import com.atguigu.tingshu.search.repository.SuggestIndexRepository;
 import com.atguigu.tingshu.search.service.SearchService;
 import com.atguigu.tingshu.user.client.impl.UserInfoDegradeFeignClient;
 import com.atguigu.tingshu.vo.search.AlbumInfoIndexVo;
@@ -32,6 +36,7 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.elasticsearch.core.suggest.Completion;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -65,6 +70,8 @@ public class SearchServiceImpl implements SearchService
     private ThreadPoolExecutor threadPoolExecutor;
     @Autowired
     private ElasticsearchClient elasticsearchClient;
+    @Autowired
+    private SuggestIndexRepository suggestIndexRepository;
 
 
     @Override
@@ -153,6 +160,15 @@ public class SearchServiceImpl implements SearchService
         albumInfoIndex.setCommentStatNum(ThreadLocalRandom.current().nextInt(1000000000));
 
         albumInfoIndexRepository.save(albumInfoIndex);
+
+        SuggestIndex suggestIndex = new SuggestIndex();
+        suggestIndex.setId(UUID.randomUUID().toString().replaceAll("-",
+                ""));
+        suggestIndex.setTitle(albumInfoIndex.getAlbumTitle());
+        suggestIndex.setKeyword(new Completion(new String[]{albumInfoIndex.getAlbumTitle()}));
+        suggestIndex.setKeywordPinyin(new Completion(new String[]{PinYinUtils.toHanyuPinyin(albumInfoIndex.getAlbumTitle())}));
+        suggestIndex.setKeywordSequence(new Completion(new String[]{PinYinUtils.getFirstLetter(albumInfoIndex.getAlbumTitle())}));
+        suggestIndexRepository.save(suggestIndex);
     }
 
     @Override
@@ -245,31 +261,103 @@ public class SearchServiceImpl implements SearchService
         return result;
     }
 
+    @Override
+    public List<String> completeSuggest(String keyword)
+    {
+        SearchRequest.Builder searchRequest = new SearchRequest.Builder();
+        searchRequest.index("suggestinfo").suggest(
+                s -> s.suggesters("suggestionKeyword",
+                                f -> f.prefix(keyword).completion(
+                                        c -> c.field("keyword").skipDuplicates(true).size(10)
+                                                .fuzzy(
+                                                        z -> z.fuzziness("auto"))
+                                ))
+                        .suggesters("suggestionkeywordPinyin",
+                                f -> f.prefix(keyword).completion(
+                                        c -> c.field("keywordPinyin").skipDuplicates(true).size(10)
+                                                .fuzzy(z -> z.fuzziness("auto"))
+                                ))
+                        .suggesters("suggestionkeywordSequence",
+                                f -> f.prefix(keyword).completion(
+                                        c -> c.field("keywordSequence").skipDuplicates(true).size(10)
+                                                .fuzzy(z -> z.fuzziness("auto"))
+                                ))
+        );
+        SearchResponse<SuggestIndex> searchResponse = null;
+        try
+        {
+            searchResponse = elasticsearchClient.search(searchRequest.build(),
+                    SuggestIndex.class);
+        } catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        HashSet<String> titleSet = new HashSet<>();
+        titleSet.addAll(this.parseResultData(searchResponse,
+                "suggestionKeyword"));
+        titleSet.addAll(this.parseResultData(searchResponse,
+                "suggestionkeywordPinyin"));
+        titleSet.addAll(this.parseResultData(searchResponse,
+                "suggestionkeywordSequence"));
+
+        if (titleSet.size() < 10)
+        {
+            SearchResponse<SuggestIndex> response = null;
+            try
+            {
+                response = elasticsearchClient.search(s -> s.index("suggestinfo")
+                                .query(f -> f.match(m -> m.field("title").query(keyword)))
+                        ,
+                        SuggestIndex.class);
+            } catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+            for (Hit<SuggestIndex> hit : response.hits().hits())
+            {
+                SuggestIndex suggestIndex = hit.source();
+                titleSet.add(suggestIndex.getTitle());
+                if (titleSet.size() == 10)
+                {
+                    break;
+                }
+            }
+        }
+        return new ArrayList<>(titleSet);
+    }
+
+    private List<String> parseResultData(SearchResponse<SuggestIndex> response,
+                                         String suggestName)
+    {
+        List<String> suggestList = new ArrayList<>();
+        Map<String, List<Suggestion<SuggestIndex>>> groupBySuggestionListAggMap = response.suggest();
+        groupBySuggestionListAggMap.get(suggestName).forEach(item ->
+        {
+            CompletionSuggest<SuggestIndex> completionSuggest = item.completion();
+            completionSuggest.options().forEach(it ->
+            {
+                SuggestIndex suggestIndex = it.source();
+                suggestList.add(suggestIndex.getTitle());
+            });
+        });
+        return suggestList;
+    }
+
     private SearchRequest buildQueryDsl(AlbumIndexQuery albumIndexQuery)
     {
         SearchRequest.Builder requestBuilder = new SearchRequest.Builder();
         BoolQuery.Builder boolQuery = new BoolQuery.Builder();
 
-        // =========================
-        // 1. 关键词检索
-        // =========================
         String keyword = albumIndexQuery.getKeyword();
         if (!StringUtils.isEmpty(keyword))
         {
-            // 这里使用一个内部 bool，将标题和简介做 should 匹配，
-            // 然后通过 minimumShouldMatch("1") 保证至少命中一个字段
             boolQuery.must(q -> q.bool(b -> b.should(s -> s.match(m -> m.field("albumTitle").query(keyword)))
                     .should(s -> s.match(m -> m.field("albumIntro").query(keyword))).minimumShouldMatch("1")));
 
-            // 高亮标题字段
             requestBuilder.highlight(
                     h -> h.fields("albumTitle",
                             f -> f.preTags("<span style='color:red'>").postTags("</span>")));
         }
-
-        // =========================
-        // 2. 分类过滤
-        // =========================
         Long category1Id = albumIndexQuery.getCategory1Id();
         if (category1Id != null)
         {
@@ -287,10 +375,6 @@ public class SearchServiceImpl implements SearchService
         {
             boolQuery.filter(f -> f.term(t -> t.field("category3Id").value(category3Id)));
         }
-
-        // =========================
-        // 3. 属性过滤（nested）
-        // =========================
         List<String> attributeList = albumIndexQuery.getAttributeList();
         if (!CollectionUtils.isEmpty(attributeList))
         {
@@ -309,19 +393,11 @@ public class SearchServiceImpl implements SearchService
 
                 String attributeId = split[0];
                 String valueId = split[1];
-
-                // 注意：
-                // attributeValueIndexList 是 nested 类型字段时，
-                // 必须使用 nested query，避免不同数组元素之间错位匹配。
                 boolQuery.filter(f -> f.nested(n -> n.path("attributeValueIndexList").query(q -> q.bool(
                         b -> b.must(m -> m.term(t -> t.field("attributeValueIndexList.attributeId").value(attributeId)))
                                 .must(m -> m.term(t -> t.field("attributeValueIndexList.valueId").value(valueId)))))));
             }
         }
-
-        // =========================
-        // 4. 排序
-        // =========================
         String order = albumIndexQuery.getOrder();
         if (!StringUtils.isEmpty(order) && order.contains(":"))
         {
@@ -346,8 +422,6 @@ public class SearchServiceImpl implements SearchService
                     default:
                         break;
                 }
-
-                // 只有字段合法时才排序
                 if (!StringUtils.isEmpty(orderField))
                 {
                     SortOrder sortOrder = "asc".equalsIgnoreCase(sortDirection) ? SortOrder.Asc : SortOrder.Desc;
@@ -358,18 +432,9 @@ public class SearchServiceImpl implements SearchService
             }
         } else
         {
-            // 默认按相关性评分倒序
             requestBuilder.sort(s -> s.field(f -> f.field("_score").order(SortOrder.Desc)));
         }
-
-        // =========================
-        // 5. 返回字段控制
-        // =========================
         requestBuilder.source(s -> s.filter(f -> f.excludes("attributeValueIndexList")));
-
-        // =========================
-        // 6. 分页
-        // =========================
         int pageNo = albumIndexQuery.getPageNo() == null || albumIndexQuery.getPageNo() < 1 ? 1 :
                 albumIndexQuery.getPageNo();
         int pageSize = albumIndexQuery.getPageSize() == null || albumIndexQuery.getPageSize() < 1 ? 10 :
@@ -378,10 +443,6 @@ public class SearchServiceImpl implements SearchService
         int from = (pageNo - 1) * pageSize;
         requestBuilder.from(from);
         requestBuilder.size(pageSize);
-
-        // =========================
-        // 7. 指定索引和查询条件
-        // =========================
         requestBuilder.index("albuminfo").query(q -> q.bool(boolQuery.build()));
 
         SearchRequest searchRequest = requestBuilder.build();
@@ -395,7 +456,6 @@ public class SearchServiceImpl implements SearchService
 
         HitsMetadata<AlbumInfoIndex> hits = searchResponse.hits();
 
-        // 设置总条数
         if (hits.total() != null)
         {
             responseVo.setTotal(hits.total().value());
@@ -422,7 +482,6 @@ public class SearchServiceImpl implements SearchService
                         vo);
             }
 
-            // 高亮处理要注意空指针保护
             if (hit.highlight() != null && hit.highlight().get("albumTitle") != null &&
                     !hit.highlight().get("albumTitle").isEmpty())
             {
