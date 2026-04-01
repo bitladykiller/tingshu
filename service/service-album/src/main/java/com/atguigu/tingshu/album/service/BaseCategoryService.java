@@ -18,4 +18,6 @@ public interface BaseCategoryService extends IService<BaseCategory1> {
     BaseCategoryView getCategoryView(Long category3Id);
 
     List<BaseCategory3> selectTopBaseCategory3(Long category1Id);
+
+    JSONObject getAllCategoryList(Long category1Id);
 }

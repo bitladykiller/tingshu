@@ -9,9 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -110,5 +108,73 @@ public class BaseCategoryServiceImpl extends ServiceImpl<BaseCategory1Mapper, Ba
                 category2IdList).eq(BaseCategory3::getIsTop,
                 1).last("limit 7");
         return baseCategory3Mapper.selectList(wrapper);
+    }
+
+    @Override
+    public JSONObject getAllCategoryList(Long category1Id)
+    {
+        BaseCategory1 baseCategory1 = baseCategory1Mapper.selectById(category1Id);
+
+        JSONObject category1 = new JSONObject();
+        category1.put("categoryId",
+                category1Id);
+        category1.put("categoryName",
+                baseCategory1 == null ? null : baseCategory1.getName());
+
+        List<BaseCategoryView> baseCategoryViewList = baseCategoryViewMapper.selectList(
+                new LambdaQueryWrapper<BaseCategoryView>()
+                        .eq(BaseCategoryView::getCategory1Id,
+                                category1Id)
+                        .orderByAsc(BaseCategoryView::getCategory2Id)
+                        .orderByAsc(BaseCategoryView::getCategory3Id)
+        );
+
+        List<JSONObject> category2Child = new ArrayList<>();
+        category1.put("categoryChild",
+                category2Child);
+
+        if (baseCategoryViewList == null || baseCategoryViewList.isEmpty())
+        {
+            return category1;
+        }
+
+        Long currentCategory2Id = null;
+        JSONObject currentCategory2 = null;
+        List<JSONObject> currentCategory3Child = null;
+
+        for (BaseCategoryView view : baseCategoryViewList)
+        {
+            Long category2Id = view.getCategory2Id();
+
+            if (!Objects.equals(currentCategory2Id,
+                    category2Id))
+            {
+                currentCategory2Id = category2Id;
+
+                currentCategory2 = new JSONObject();
+                currentCategory2.put("categoryId",
+                        category2Id);
+                currentCategory2.put("categoryName",
+                        view.getCategory2Name());
+
+                currentCategory3Child = new ArrayList<>();
+                currentCategory2.put("categoryChild",
+                        currentCategory3Child);
+
+                category2Child.add(currentCategory2);
+            }
+
+            if (view.getCategory3Id() != null)
+            {
+                JSONObject category3 = new JSONObject();
+                category3.put("categoryId",
+                        view.getCategory3Id());
+                category3.put("categoryName",
+                        view.getCategory3Name());
+                currentCategory3Child.add(category3);
+            }
+        }
+
+        return category1;
     }
 }
