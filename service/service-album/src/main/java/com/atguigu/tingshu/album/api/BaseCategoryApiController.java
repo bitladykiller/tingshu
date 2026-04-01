@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.atguigu.tingshu.album.service.BaseCategoryService;
 import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.model.album.BaseAttribute;
+import com.atguigu.tingshu.model.album.BaseCategory3;
 import com.atguigu.tingshu.model.album.BaseCategoryView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,7 +23,7 @@ import java.util.Map;
 @RequestMapping(value="/api/album/category")
 @SuppressWarnings({"all"})
 public class BaseCategoryApiController {
-	
+
 	@Autowired
 	private BaseCategoryService baseCategoryService;
 
@@ -46,6 +47,14 @@ public class BaseCategoryApiController {
 		BaseCategoryView baseCategoryView = baseCategoryService.getCategoryView(category3Id);
 		return Result.ok(baseCategoryView);
 	}
+
+    @Operation(summary = "获取一级分类下的所有三级分类的对象")
+    @GetMapping("findToBaseCategory3/{category1Id}")
+    public Result<List<BaseCategory3>> findToBaseCategory3(@PathVariable("category1Id") Long category1Id)
+    {
+        List<BaseCategory3> baseCategory3List = baseCategoryService.selectTopBaseCategory3(category1Id);
+        return Result.ok(baseCategory3List);
+    }
 
 
 }

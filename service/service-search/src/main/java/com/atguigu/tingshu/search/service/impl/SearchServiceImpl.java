@@ -1,18 +1,23 @@
 package com.atguigu.tingshu.search.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.NestedQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import com.alibaba.fastjson.JSON;
 import com.atguigu.tingshu.album.client.AlbumInfoFeignClient;
 import com.atguigu.tingshu.album.client.CategoryFeignClient;
 import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.model.album.AlbumAttributeValue;
 import com.atguigu.tingshu.model.album.AlbumInfo;
+import com.atguigu.tingshu.model.album.BaseCategory3;
 import com.atguigu.tingshu.model.album.BaseCategoryView;
 import com.atguigu.tingshu.model.search.AlbumInfoIndex;
 import com.atguigu.tingshu.model.search.AttributeValueIndex;
@@ -32,9 +37,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -70,45 +73,61 @@ public class SearchServiceImpl implements SearchService
 
 
         CompletableFuture<AlbumInfo> albumFuture = CompletableFuture.supplyAsync(() ->
-        {
-            Result<AlbumInfo> result = albumInfoFeignClient.getAlbumInfo(albumId);
-            Assert.notNull(result, "专辑返回结果为空");
-            Assert.notNull(result.getData(), "专辑为空");
-            return result.getData();
-        }, threadPoolExecutor);
+                {
+                    Result<AlbumInfo> result = albumInfoFeignClient.getAlbumInfo(albumId);
+                    Assert.notNull(result,
+                            "专辑返回结果为空");
+                    Assert.notNull(result.getData(),
+                            "专辑为空");
+                    return result.getData();
+                },
+                threadPoolExecutor);
 
         CompletableFuture<List<AttributeValueIndex>> attrFuture = CompletableFuture.supplyAsync(() ->
-        {
-            Result<List<AlbumAttributeValue>> result = albumInfoFeignClient.findAlbumAttributeValue(albumId);
-            Assert.notNull(result, "专辑属性结果集为空");
-            Assert.notNull(result.getData(), "专辑属性为空");
+                {
+                    Result<List<AlbumAttributeValue>> result = albumInfoFeignClient.findAlbumAttributeValue(albumId);
+                    Assert.notNull(result,
+                            "专辑属性结果集为空");
+                    Assert.notNull(result.getData(),
+                            "专辑属性为空");
 
-            return result.getData().stream().map(item ->
-            {
-                AttributeValueIndex index = new AttributeValueIndex();
+                    return result.getData().stream().map(item ->
+                    {
+                        AttributeValueIndex index = new AttributeValueIndex();
 
-                BeanUtils.copyProperties(item, index);
-                return index;
-            }).collect(Collectors.toList());
-        }, threadPoolExecutor);
+                        BeanUtils.copyProperties(item,
+                                index);
+                        return index;
+                    }).collect(Collectors.toList());
+                },
+                threadPoolExecutor);
 
         CompletableFuture<BaseCategoryView> categoryFuture = albumFuture.thenApplyAsync(albumInfo ->
-        {
-            Result<BaseCategoryView> result = categoryFeignClient.getCategoryView(albumInfo.getCategory3Id());
-            Assert.notNull(result, "专辑分类结果集为空");
-            Assert.notNull(result.getData(), "专辑分类为空");
-            return result.getData();
-        }, threadPoolExecutor);
+                {
+                    Result<BaseCategoryView> result = categoryFeignClient.getCategoryView(albumInfo.getCategory3Id());
+                    Assert.notNull(result,
+                            "专辑分类结果集为空");
+                    Assert.notNull(result.getData(),
+                            "专辑分类为空");
+                    return result.getData();
+                },
+                threadPoolExecutor);
 
         CompletableFuture<UserInfoVo> userFuture = albumFuture.thenApplyAsync(albumInfo ->
-        {
-            Result<UserInfoVo> result = userInfoDegradeFeignClient.getUserInfoVo(albumInfo.getUserId());
-            Assert.notNull(result, "用户结果集为空");
-            Assert.notNull(result.getData(), "用户为空");
-            return result.getData();
-        }, threadPoolExecutor);
+                {
+                    Result<UserInfoVo> result = userInfoDegradeFeignClient.getUserInfoVo(albumInfo.getUserId());
+                    Assert.notNull(result,
+                            "用户结果集为空");
+                    Assert.notNull(result.getData(),
+                            "用户为空");
+                    return result.getData();
+                },
+                threadPoolExecutor);
 
-        CompletableFuture.allOf(albumFuture, attrFuture, categoryFuture, userFuture).join();
+        CompletableFuture.allOf(albumFuture,
+                attrFuture,
+                categoryFuture,
+                userFuture).join();
 
         AlbumInfo albumInfo = albumFuture.join();
         List<AttributeValueIndex> attrList = attrFuture.join();
@@ -117,7 +136,8 @@ public class SearchServiceImpl implements SearchService
 
         AlbumInfoIndex albumInfoIndex = new AlbumInfoIndex();
 
-        BeanUtils.copyProperties(albumInfo, albumInfoIndex);
+        BeanUtils.copyProperties(albumInfo,
+                albumInfoIndex);
 
         albumInfoIndex.setAttributeValueIndexList(attrList);
 
@@ -151,11 +171,13 @@ public class SearchServiceImpl implements SearchService
         try
         {
             // 2. 执行查询
-            response = elasticsearchClient.search(request, AlbumInfoIndex.class);
+            response = elasticsearchClient.search(request,
+                    AlbumInfoIndex.class);
         } catch (IOException e)
         {
             // 3. 实际项目中建议打印日志，并包装成业务异常
-            throw new RuntimeException("调用 Elasticsearch 查询专辑索引失败", e);
+            throw new RuntimeException("调用 Elasticsearch 查询专辑索引失败",
+                    e);
         }
 
         // 4. 解析查询结果
@@ -173,6 +195,54 @@ public class SearchServiceImpl implements SearchService
         responseVo.setTotalPages(totalPages);
 
         return responseVo;
+    }
+
+    @Override
+    public List<Map<String, Object>> channel(Long category1Id)
+    {
+        Result<List<BaseCategory3>> baseCategory3ListResult = categoryFeignClient.findTopBaseCategory3(category1Id);
+        List<BaseCategory3> baseCategory3List = baseCategory3ListResult.getData();
+        Map<Long, BaseCategory3> category3IdToMap = baseCategory3List.stream().collect(Collectors.toMap(BaseCategory3::getId,
+                baseCategory3 -> baseCategory3));
+        List<Long> idList = baseCategory3List.stream().map(BaseCategory3::getId).collect(Collectors.toList());
+        List<FieldValue> valueList = idList.stream().map(id -> FieldValue.of(id)).collect(Collectors.toList());
+        SearchRequest.Builder request = new SearchRequest.Builder();
+        request.index("albuminfo").query(q -> q.terms(f -> f.field("category3Id").terms(new TermsQueryField.Builder().value(valueList).build())));
+        request.aggregations("groupByCategory3IdAgg",
+                a -> a.terms(t -> t.field("category3Id"))
+                        .aggregations("topTenHotScoreAgg",
+                                a1 -> a1.topHits(s -> s.size(6).sort(sort -> sort.field(f -> f.field("hotScore").order(SortOrder.Desc))))));
+        SearchResponse<AlbumInfoIndex> searchResponse = null;
+        try
+        {
+            searchResponse = elasticsearchClient.search(request.build(),
+                    AlbumInfoIndex.class);
+        } catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        Aggregate groupByCategory3IdAgg = searchResponse.aggregations().get("groupByCategory3IdAgg");
+        groupByCategory3IdAgg.lterms().buckets().array().forEach(item ->
+        {
+            List<AlbumInfoIndex> albumInfoIndexList = new ArrayList<>();
+            long category3Id = item.key();
+            Aggregate topTenHotScoreAgg = item.aggregations().get("topTenHotScoreAgg");
+            topTenHotScoreAgg.topHits().hits().hits().forEach(hit ->
+            {
+                String json = hit.source().toString();
+                AlbumInfoIndex albumInfoIndex = JSON.parseObject(json,
+                        AlbumInfoIndex.class);
+                albumInfoIndexList.add(albumInfoIndex);
+            });
+            Map<String, Object> map = new HashMap<>();
+            map.put("baseCategory3",
+                    category3IdToMap.get(category3Id));
+            map.put("list",
+                    albumInfoIndexList);
+            result.add(map);
+        });
+        return result;
     }
 
     private SearchRequest buildQueryDsl(AlbumIndexQuery albumIndexQuery)
@@ -193,7 +263,8 @@ public class SearchServiceImpl implements SearchService
 
             // 高亮标题字段
             requestBuilder.highlight(
-                    h -> h.fields("albumTitle", f -> f.preTags("<span style='color:red'>").postTags("</span>")));
+                    h -> h.fields("albumTitle",
+                            f -> f.preTags("<span style='color:red'>").postTags("</span>")));
         }
 
         // =========================
@@ -347,7 +418,8 @@ public class SearchServiceImpl implements SearchService
 
             if (source != null)
             {
-                BeanUtils.copyProperties(source, vo);
+                BeanUtils.copyProperties(source,
+                        vo);
             }
 
             // 高亮处理要注意空指针保护

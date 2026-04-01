@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @Tag(name = "搜索专辑管理")
 @RestController
@@ -56,6 +58,22 @@ public class SearchApiController
     {
         AlbumSearchResponseVo albumSearchResponseVo = searchService.search(albumIndexQuery);
         return Result.ok(albumSearchResponseVo);
+    }
+
+    @Operation(summary = "获取频道页数据")
+    @GetMapping("channel/{category1Id}")
+    public Result channel(@PathVariable Long category1Id)
+    {
+
+        List<Map<String, Object>> mapList = null;
+        try
+        {
+            mapList = searchService.channel(category1Id);
+        } catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        return Result.ok(mapList);
     }
 }
 
