@@ -3,9 +3,14 @@ package com.atguigu.tingshu.search.api;
 import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.query.search.AlbumIndexQuery;
 import com.atguigu.tingshu.search.service.SearchService;
+import com.atguigu.tingshu.vo.search.AlbumInfoIndexVo;
 import com.atguigu.tingshu.vo.search.AlbumSearchResponseVo;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -82,6 +87,29 @@ public class SearchApiController
     {
         List<String> list = searchService.completeSuggest(keyword);
         return Result.ok(list);
+    }
+
+    @SneakyThrows
+    @Operation(summary = "更新排行榜")
+    @GetMapping("updateLatelyAlbumRanking")
+    public Result updateLatelyAlbumRanking()
+    {
+        searchService.updateLatelyAlbumRanking();
+        return Result.ok();
+    }
+
+    @Operation(summary = "获取排行榜列表")
+    @Parameters({
+            @Parameter(name = "category1Id", description = "一级分类", in = ParameterIn.PATH, required = true),
+            @Parameter(name = "dimension", description = "热度:hotScore、播放量:playStatNum、订阅量:subscribeStatNum、购买量:buyStatNum、评论数:albumCommentStatNum", required = true, in = ParameterIn.PATH),
+    })
+    @GetMapping("findRankingList/{category1Id}/{dimension}")
+    public Result<List<AlbumInfoIndexVo>> findRankingList(@PathVariable Long category1Id,
+                                                          @PathVariable String dimension)
+    {
+        List<AlbumInfoIndexVo> infoIndexVoList = searchService.findRankingList(category1Id,
+                dimension);
+        return Result.ok(infoIndexVoList);
     }
 }
 

@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.atguigu.tingshu.album.service.BaseCategoryService;
 import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.model.album.BaseAttribute;
+import com.atguigu.tingshu.model.album.BaseCategory1;
 import com.atguigu.tingshu.model.album.BaseCategory3;
 import com.atguigu.tingshu.model.album.BaseCategoryView;
 import io.swagger.v3.oas.annotations.Operation;
@@ -64,6 +65,14 @@ public class BaseCategoryApiController
     {
         JSONObject jsonObject = baseCategoryService.getAllCategoryList(category1Id);
         return Result.ok(jsonObject);
+    }
+
+    @Operation(summary = "查询所有的一级分类信息")
+    @GetMapping("findAllCategory1")
+    public Result<List<BaseCategory1>> findAllCategory1()
+    {
+        List<BaseCategory1> baseCategory1List = baseCategoryService.findAllCategory1();
+        return Result.ok(baseCategory1List);
     }
 
 

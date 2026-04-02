@@ -1,6 +1,7 @@
 package com.atguigu.tingshu.search.service;
 
 import com.atguigu.tingshu.query.search.AlbumIndexQuery;
+import com.atguigu.tingshu.vo.search.AlbumInfoIndexVo;
 import com.atguigu.tingshu.vo.search.AlbumSearchResponseVo;
 
 import java.io.IOException;
@@ -19,4 +20,9 @@ public interface SearchService {
     List<Map<String, Object>> channel(Long category1Id) throws IOException;
 
     List<String> completeSuggest(String keyword);
+
+    void updateLatelyAlbumRanking();
+
+    List<AlbumInfoIndexVo> findRankingList(Long category1Id,
+                                           String dimension);
 }

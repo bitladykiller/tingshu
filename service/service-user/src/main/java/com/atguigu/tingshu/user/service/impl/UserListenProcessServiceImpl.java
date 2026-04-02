@@ -12,6 +12,7 @@ import com.atguigu.tingshu.vo.user.UserListenProcessVo;
 import org.bson.types.ObjectId;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -20,6 +21,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -105,5 +108,24 @@ public class UserListenProcessServiceImpl implements UserListenProcessService
                     MqConst.ROUTING_TRACK_STAT_UPDATE,
                     JSON.toJSONString(trackStatMqVo));
         }
+    }
+
+    @Override
+    public Map<String, Object> getLatelyTrack(Long userId)
+    {
+        Query query = Query.query(Criteria.where("userId").is(userId));
+        Sort sort = Sort.by(Sort.Direction.DESC,
+                "updateTime");
+        query.with(sort);
+        UserListenProcess userListenProcess = mongoTemplate.findOne(query,
+                UserListenProcess.class);
+        if (null == userListenProcess)
+            return null;
+        Map<String, Object> map = new HashMap<>();
+        map.put("albumId",
+                userListenProcess.getAlbumId());
+        map.put("trackId",
+                userListenProcess.getTrackId());
+        return map;
     }
 }

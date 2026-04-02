@@ -11,9 +11,15 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface AlbumInfoMapper extends BaseMapper<AlbumInfo> {
+public interface AlbumInfoMapper extends BaseMapper<AlbumInfo>
+{
 
-    IPage<AlbumInfoVo> selectAlbumPage(Page<AlbumInfoVo> pageParam,@Param("vo") AlbumInfoQuery albumInfoQuery);
+    IPage<AlbumInfoVo> selectAlbumPage(Page<AlbumInfoVo> pageParam,
+                                       @Param("vo") AlbumInfoQuery albumInfoQuery);
 
     AlbumStatVo selectAlbumStat(@Param("albumId") Long albumId);
+
+    Integer updateStat(@Param("albumId") Long albumId,
+                       @Param("statType") String statType,
+                       @Param("count") Integer count);
 }

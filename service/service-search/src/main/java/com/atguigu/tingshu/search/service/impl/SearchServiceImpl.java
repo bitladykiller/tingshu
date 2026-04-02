@@ -15,12 +15,10 @@ import co.elastic.clients.elasticsearch.core.search.Suggestion;
 import com.alibaba.fastjson.JSON;
 import com.atguigu.tingshu.album.client.AlbumInfoFeignClient;
 import com.atguigu.tingshu.album.client.CategoryFeignClient;
+import com.atguigu.tingshu.common.constant.RedisConstant;
 import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.common.util.PinYinUtils;
-import com.atguigu.tingshu.model.album.AlbumAttributeValue;
-import com.atguigu.tingshu.model.album.AlbumInfo;
-import com.atguigu.tingshu.model.album.BaseCategory3;
-import com.atguigu.tingshu.model.album.BaseCategoryView;
+import com.atguigu.tingshu.model.album.*;
 import com.atguigu.tingshu.model.search.AlbumInfoIndex;
 import com.atguigu.tingshu.model.search.AttributeValueIndex;
 import com.atguigu.tingshu.model.search.SuggestIndex;
@@ -37,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.suggest.Completion;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -72,6 +71,8 @@ public class SearchServiceImpl implements SearchService
     private ElasticsearchClient elasticsearchClient;
     @Autowired
     private SuggestIndexRepository suggestIndexRepository;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
 
     @Override
@@ -180,32 +181,26 @@ public class SearchServiceImpl implements SearchService
     @Override
     public AlbumSearchResponseVo search(AlbumIndexQuery albumIndexQuery)
     {
-        // 1. 构建 Elasticsearch 查询请求
         SearchRequest request = buildQueryDsl(albumIndexQuery);
 
         SearchResponse<AlbumInfoIndex> response;
         try
         {
-            // 2. 执行查询
             response = elasticsearchClient.search(request,
                     AlbumInfoIndex.class);
         } catch (IOException e)
         {
-            // 3. 实际项目中建议打印日志，并包装成业务异常
             throw new RuntimeException("调用 Elasticsearch 查询专辑索引失败",
                     e);
         }
 
-        // 4. 解析查询结果
         AlbumSearchResponseVo responseVo = parseSearchResult(response);
 
-        // 5. 回填分页信息
         Integer pageNo = albumIndexQuery.getPageNo();
         Integer pageSize = albumIndexQuery.getPageSize();
         responseVo.setPageNo(pageNo);
         responseVo.setPageSize(pageSize);
 
-        // 6. 计算总页数，使用向上取整公式
         long total = responseVo.getTotal() == null ? 0L : responseVo.getTotal();
         long totalPages = (total + pageSize - 1) / pageSize;
         responseVo.setTotalPages(totalPages);
@@ -324,6 +319,47 @@ public class SearchServiceImpl implements SearchService
             }
         }
         return new ArrayList<>(titleSet);
+    }
+
+    @Override
+    public void updateLatelyAlbumRanking()
+    {
+        Result<List<BaseCategory1>> baseCategory1Result = categoryFeignClient.findAllCategory1();
+        Assert.notNull(baseCategory1Result,
+                "一级分类结果集为空");
+        List<BaseCategory1> baseCategory1List = baseCategory1Result.getData();
+        Assert.notNull(baseCategory1List,
+                "一级分类集合为空");
+        for (BaseCategory1 baseCategory1 : baseCategory1List)
+        {
+            String[] rankingDimensionArray = new String[]{"hotScore", "playStatNum", "subscribeStatNum", "buyStatNum", "commentStatNum"};
+            for (String ranging : rankingDimensionArray)
+            {
+                SearchResponse<AlbumInfoIndex> response = null;
+                try
+                {
+                    response = elasticsearchClient.search(f -> f.index("albuminfo")
+                                    .query(q -> q.term(t -> t.field("category1Id").value(baseCategory1.getId())))
+                                    .sort(s -> s.field(d -> d.field(ranging).order(SortOrder.Desc)))
+                                    .size(10),
+                            AlbumInfoIndex.class);
+                } catch (IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
+                List<AlbumInfoIndex> albumInfoIndexList = response.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
+                String rangKey = RedisConstant.RANKING_KEY_PREFIX + baseCategory1.getId();
+                redisTemplate.boundHashOps(rangKey).put(ranging,
+                        albumInfoIndexList);
+            }
+        }
+    }
+
+    @Override
+    public List<AlbumInfoIndexVo> findRankingList(Long category1Id,
+                                                  String dimension)
+    {
+        return (List<AlbumInfoIndexVo>) redisTemplate.boundHashOps(RedisConstant.RANKING_KEY_PREFIX + category1Id).get(dimension);
     }
 
     private List<String> parseResultData(SearchResponse<SuggestIndex> response,

@@ -44,6 +44,12 @@
           and stat.is_deleted = 0
         group by stat.album_id
     </select>
+    <update id="updateStat">
+        update album_stat
+        set stat_num = stat_num + #{count}
+        where album_id = #{albumId}
+          and stat_type = #{statType}
+    </update>
 
 
 </mapper>

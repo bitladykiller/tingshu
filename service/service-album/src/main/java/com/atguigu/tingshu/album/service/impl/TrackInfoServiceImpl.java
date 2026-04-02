@@ -265,6 +265,24 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
         return pageInfo;
     }
 
+    @Transactional
+    @Override
+    public void updateStat(Long albumId,
+                           Long trackId,
+                           String statType,
+                           Integer count)
+    {
+        trackInfoMapper.updateStat(trackId,
+                statType,
+                count);
+        if (statType.equals(SystemConstant.TRACK_STAT_PLAY))
+        {
+            albumInfoService.updateStat(albumId,
+                    SystemConstant.ALBUM_STAT_PLAY,
+                    count);
+        }
+    }
+
     private void saveTrackStat(Long trackId,
                                String trackType)
     {

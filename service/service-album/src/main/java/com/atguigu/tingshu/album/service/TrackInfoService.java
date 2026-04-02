@@ -28,4 +28,9 @@ public interface TrackInfoService extends IService<TrackInfo> {
     IPage<AlbumTrackListVo> findAlbumTrackPage(Page<AlbumTrackListVo> pageParam,
                                                Long albumId,
                                                Long userId);
+
+    void updateStat(Long albumId,
+                    Long trackId,
+                    String statType,
+                    Integer count);
 }
