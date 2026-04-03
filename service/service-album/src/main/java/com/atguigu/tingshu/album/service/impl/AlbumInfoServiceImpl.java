@@ -64,8 +64,7 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
         albumInfo.setUserId(1L);
         albumInfo.setStatus(SystemConstant.ALBUM_STATUS_PASS);
         String payType = albumInfo.getPayType();
-        if (SystemConstant.ALBUM_PAY_TYPE_FREE.equals(payType))
-            albumInfo.setTracksForFree(3);
+        if (SystemConstant.ALBUM_PAY_TYPE_FREE.equals(payType)) albumInfo.setTracksForFree(3);
         albumInfoMapper.insert(albumInfo);
 
         List<AlbumAttributeValueVo> albumAttributeValueVoList = albumInfoVo.getAlbumAttributeValueVoList();
@@ -88,10 +87,9 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
         this.saveAlbumStat(albumInfo.getId(),
                 SystemConstant.ALBUM_STAT_SUBSCRIBE);
         String isOpen = albumInfo.getIsOpen();
-        if ("1".equals(isOpen))
-            rabbitService.sendMessage(MqConst.EXCHANGE_ALBUM,
-                    MqConst.ROUTING_ALBUM_UPPER,
-                    albumInfo.getId());
+        if ("1".equals(isOpen)) rabbitService.sendMessage(MqConst.EXCHANGE_ALBUM,
+                MqConst.ROUTING_ALBUM_UPPER,
+                albumInfo.getId());
 
 
     }
@@ -131,7 +129,7 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
 
 
     @Override
-    public AlbumInfo getAlbumInfo(Long albumId)
+    public AlbumInfo getAlbumInfo(Long albumId) //TODO 可以实现多级缓存 redisson 作为锁
     {
         AlbumInfo albumInfo = albumInfoMapper.selectById(albumId);
         LambdaQueryWrapper<AlbumAttributeValue> queryWrapper = new LambdaQueryWrapper<>();
@@ -158,15 +156,14 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
         albumAttributeValueMapper.delete(queryWrapper);
         if (!CollectionUtils.isEmpty(albumAttributeValueVoList))
         {
-            List<AlbumAttributeValue> albumAttributeValues =
-                    albumAttributeValueVoList.stream().map(albumAttributeValueVo ->
-                    {
-                        AlbumAttributeValue albumAttributeValue = new AlbumAttributeValue();
-                        BeanUtils.copyProperties(albumAttributeValueVo,
-                                albumAttributeValue);
-                        albumAttributeValue.setAlbumId(albumId);
-                        return albumAttributeValue;
-                    }).collect(Collectors.toList());
+            List<AlbumAttributeValue> albumAttributeValues = albumAttributeValueVoList.stream().map(albumAttributeValueVo ->
+            {
+                AlbumAttributeValue albumAttributeValue = new AlbumAttributeValue();
+                BeanUtils.copyProperties(albumAttributeValueVo,
+                        albumAttributeValue);
+                albumAttributeValue.setAlbumId(albumId);
+                return albumAttributeValue;
+            }).collect(Collectors.toList());
             albumAttributeValueService.saveBatch(albumAttributeValues);
         }
 
@@ -202,14 +199,12 @@ public class AlbumInfoServiceImpl extends ServiceImpl<AlbumInfoMapper, AlbumInfo
         lambdaQueryWrapper.eq(AlbumAttributeValue::getAlbumId,
                 albumId);
         List<AlbumAttributeValue> albumAttributeValueList = albumAttributeValueMapper.selectList(lambdaQueryWrapper);
-        //	返回集合数据
         return albumAttributeValueList;
     }
 
     @Override
     public AlbumStatVo getAlbumStatVoByAlbumId(Long albumId)
     {
-        //	调用mapper 层方法
         return albumInfoMapper.selectAlbumStat(albumId);
     }
 
