@@ -29,4 +29,7 @@ public interface UserInfoFeignClient
     Result<Map<Long, Integer>> userIsPaidTrack(@PathVariable("albumId") Long albumId,
                                                @RequestBody List<Long> trackIdList);
 
+    @GetMapping("api/user/userInfo/isPaidAlbum/{albumId}")
+    Result<Boolean> isPaidAlbum(@PathVariable("albumId") Long albumId);
+
 }

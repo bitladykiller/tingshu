@@ -25,4 +25,10 @@ public class UserInfoDegradeFeignClient implements UserInfoFeignClient
     {
         return Result.fail();
     }
+
+    @Override
+    public Result<Boolean> isPaidAlbum(Long albumId)
+    {
+        return Result.fail();
+    }
 }

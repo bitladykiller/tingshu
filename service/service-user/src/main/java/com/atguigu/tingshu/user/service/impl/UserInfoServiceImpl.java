@@ -77,4 +77,18 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
             return map;
         }
     }
+
+    @Override
+    public Boolean isPaidAlbum(Long userId,
+                               Long albumId)
+    {
+        Long count = userPaidAlbumMapper.selectCount(new LambdaQueryWrapper<UserPaidAlbum>().eq(UserPaidAlbum::getUserId,
+                userId).eq(UserPaidAlbum::getAlbumId,
+                albumId));
+        if (count > 0)
+        {
+            return true;
+        }
+        return false;
+    }
 }

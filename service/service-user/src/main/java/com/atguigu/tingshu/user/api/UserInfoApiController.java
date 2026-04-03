@@ -50,5 +50,16 @@ public class UserInfoApiController
         return Result.ok(map);
     }
 
+    @GuiGuLogin
+    @Operation(summary = "判断用户是否购买过专辑")
+    @GetMapping("isPaidAlbum/{albumId}")
+    public Result<Boolean> isPaidAlbum(@PathVariable Long albumId)
+    {
+        Long userId = AuthContextHolder.getUserId();
+        Boolean flag = userInfoService.isPaidAlbum(userId,
+                albumId);
+        return Result.ok(flag);
+    }
+
 }
 

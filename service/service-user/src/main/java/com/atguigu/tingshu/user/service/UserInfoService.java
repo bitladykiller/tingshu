@@ -17,4 +17,7 @@ public interface UserInfoService extends IService<UserInfo>
     Map<Long, Integer> userIsPaidTrack(Long userId,
                                        Long albumId,
                                        List<Long> trackIdList);
+
+    Boolean isPaidAlbum(Long userId,
+                        Long albumId);
 }
