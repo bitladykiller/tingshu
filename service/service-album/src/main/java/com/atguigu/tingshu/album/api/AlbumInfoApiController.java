@@ -1,6 +1,8 @@
 package com.atguigu.tingshu.album.api;
 
 import com.atguigu.tingshu.album.service.AlbumInfoService;
+import com.atguigu.tingshu.common.constant.RedisConstant;
+import com.atguigu.tingshu.common.execption.GuiguException;
 import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.model.album.AlbumAttributeValue;
 import com.atguigu.tingshu.model.album.AlbumInfo;
@@ -12,6 +14,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tencentcloudapi.scf.v20180416.models.PublishVersionRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +32,8 @@ public class AlbumInfoApiController
 
     @Autowired
     private AlbumInfoService albumInfoService;
+    @Autowired
+    private RedissonClient redissonClient;
 
     @Operation(summary = "保存提交的专辑信息")
     @PostMapping("saveAlbumInfo")
@@ -90,6 +96,9 @@ public class AlbumInfoApiController
     @GetMapping("getAlbumInfoStat/{albumId}")
     public Result getAlbumInfoStat(@PathVariable Long albumId)
     {
+        RBloomFilter<Object> bloomFilter = redissonClient.getBloomFilter(RedisConstant.ALBUM_BLOOM_FILTER);
+        if(!bloomFilter.contains(albumId))
+            throw new GuiguException(228,"专辑不存在{}"+albumId);
         Map<String, Object> stat = albumInfoService.getAlbumInfoStat(albumId);
         return Result.ok(stat);
     }

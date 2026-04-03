@@ -22,6 +22,7 @@
         <module name="service-user" />
         <module name="service-live" />
         <module name="rabbit-util" />
+        <module name="service-cdc" />
         <module name="service-search" />
         <module name="service-dispatch" />
         <module name="model" />
@@ -45,6 +46,7 @@
       <module name="service-account-client" options="-parameters" />
       <module name="service-album" options="-parameters" />
       <module name="service-album-client" options="-parameters" />
+      <module name="service-cdc" options="-parameters" />
       <module name="service-client" options="-parameters" />
       <module name="service-comment" options="-parameters" />
       <module name="service-dispatch" options="-parameters" />

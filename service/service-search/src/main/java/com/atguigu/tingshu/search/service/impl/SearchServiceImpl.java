@@ -32,6 +32,8 @@ import com.atguigu.tingshu.vo.search.AlbumSearchResponseVo;
 import com.atguigu.tingshu.vo.user.UserInfoVo;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.suggest.Completion;
@@ -73,6 +75,8 @@ public class SearchServiceImpl implements SearchService
     private SuggestIndexRepository suggestIndexRepository;
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private RedissonClient redissonClient;
 
 
     @Override
@@ -138,6 +142,8 @@ public class SearchServiceImpl implements SearchService
                 userFuture).join();
 
         AlbumInfo albumInfo = albumFuture.join();
+        RBloomFilter<Object> bloomFilter = redissonClient.getBloomFilter(RedisConstant.ALBUM_BLOOM_FILTER);
+        bloomFilter.add(albumInfo.getId());
         List<AttributeValueIndex> attrList = attrFuture.join();
         BaseCategoryView categoryView = categoryFuture.join();
         UserInfoVo userInfoVo = userFuture.join();
