@@ -5,8 +5,56 @@
 
 
 <mapper namespace="com.atguigu.tingshu.order.mapper.OrderInfoMapper">
+    <resultMap id="orderInfoMap" type="com.atguigu.tingshu.model.order.OrderInfo" autoMapping="true">
+        <id property="id" column="id"></id>
+        <collection property="orderDetailList" ofType="com.atguigu.tingshu.model.order.OrderDetail" autoMapping="true"
+                    column="id" select="selectDetail">
+        </collection>
+    </resultMap>
 
-
-
+    <sql id="orderInfoSql">
+        oi
+        .
+        id
+        ,
+       oi.user_id,
+       oi.order_title,
+       oi.order_no,
+       oi.order_status,
+       oi.original_amount,
+       oi.derate_amount,
+       oi.order_amount,
+       oi.item_type,
+       oi.pay_way
+    </sql>
+    <sql id="orderDetailSql">
+        od
+        .
+        id
+        ,
+               od.item_id,
+               od.item_name,
+               od.item_url,
+               od.item_price
+    </sql>
+    <select id="selectUserPage" resultMap="orderInfoMap">
+        select
+        <include refid="orderInfoSql"></include>
+        from order_info oi
+        <where>
+            oi.user_id = #{userId}
+            <if test="orderStatus!=null and orderStatus!=''">
+                and oi.order_status = #{orderStatus}
+            </if>
+        </where>
+        and oi.is_deleted = 0
+        order by oi.id desc
+    </select>
+    <select id="selectDetail" resultType="com.atguigu.tingshu.model.order.OrderDetail">
+        select
+        <include refid="orderDetailSql"></include>
+        from order_detail od
+        where od.order_id = #{id}
+    </select>
 </mapper>
 

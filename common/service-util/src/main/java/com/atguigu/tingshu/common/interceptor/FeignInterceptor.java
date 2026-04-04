@@ -12,9 +12,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class FeignInterceptor implements RequestInterceptor {
 
     public void apply(RequestTemplate requestTemplate){
-        //  获取请求对象
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        //异步编排 与 MQ消费者端 为 null
         if(null != requestAttributes) {
             ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes)requestAttributes;
             HttpServletRequest request = servletRequestAttributes.getRequest();

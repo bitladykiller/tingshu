@@ -17,14 +17,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @MapperScan("com.atguigu.tingshu.*.mapper")
 public class MybatisPlusConfig {
 
-    /**
-     *
-     * @return
-     */
+
     @Bean
     public MybatisPlusInterceptor optimisticLockerInnerInterceptor(){
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
-        //向Mybatis过滤器链中添加分页拦截器
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
         return interceptor;
     }

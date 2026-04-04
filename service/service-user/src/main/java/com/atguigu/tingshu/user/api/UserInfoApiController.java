@@ -6,6 +6,7 @@ import com.atguigu.tingshu.common.util.AuthContextHolder;
 import com.atguigu.tingshu.model.user.UserInfo;
 import com.atguigu.tingshu.user.service.UserInfoService;
 import com.atguigu.tingshu.vo.user.UserInfoVo;
+import com.atguigu.tingshu.vo.user.UserPaidRecordVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.BeanUtils;
@@ -33,7 +34,7 @@ public class UserInfoApiController
         UserInfo userInfo = userInfoService.getById(userId);
         UserInfoVo userInfoVo = new UserInfoVo();
         BeanUtils.copyProperties(userInfo,
-                userInfoVo);
+                                 userInfoVo);
         return Result.ok(userInfoVo);
     }
 
@@ -45,8 +46,8 @@ public class UserInfoApiController
     {
         Long userId = AuthContextHolder.getUserId();
         Map<Long, Integer> map = userInfoService.userIsPaidTrack(userId,
-                albumId,
-                trackIdList);
+                                                                 albumId,
+                                                                 trackIdList);
         return Result.ok(map);
     }
 
@@ -57,9 +58,29 @@ public class UserInfoApiController
     {
         Long userId = AuthContextHolder.getUserId();
         Boolean flag = userInfoService.isPaidAlbum(userId,
-                albumId);
+                                                   albumId);
         return Result.ok(flag);
     }
+
+    @GuiGuLogin
+    @Operation(summary = "根据专辑id获取用户支付过的声音id列表")
+    @GetMapping("findUserPaidTrackList/{albumId}")
+    public Result findUserPaidTrackList(@PathVariable Long albumId)
+    {
+        Long userId = AuthContextHolder.getUserId();
+        List<Long> trackIdList = this.userInfoService.findUserPaidTrackList(userId,
+                                                                            albumId);
+        return Result.ok(trackIdList);
+    }
+
+    @Operation(summary = "处理用户购买记录")
+    @PostMapping("/savePaidRecord")
+    public Result savePaidRecord(@RequestBody UserPaidRecordVo userPaidRecordVo)
+    {
+        userInfoService.savePaidRecord(userPaidRecordVo);
+        return Result.ok();
+    }
+
 
 }
 

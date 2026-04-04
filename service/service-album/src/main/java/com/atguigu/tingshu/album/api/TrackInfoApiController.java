@@ -20,6 +20,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @Tag(name = "声音管理")
@@ -53,18 +54,19 @@ public class TrackInfoApiController
 
     @Operation(summary = "获取当前用户声音分页列表")
     @PostMapping("findUserTrackPage/{page}/{limit}")
-    public Result<IPage<TrackListVo>> findUserTrackPage(@Parameter(name = "page", description = "当前页面", required = true)
-                                                        @PathVariable Long page,
-                                                        @Parameter(name = "limit", description = "每页记录数", required = true)
-                                                        @PathVariable Long limit,
-                                                        @Parameter(name = "trackInfoQuery", description = "查询对象", required = false)
-                                                        @RequestBody TrackInfoQuery trackInfoQuery)
+    public Result<IPage<TrackListVo>> findUserTrackPage(
+            @Parameter(name = "page", description = "当前页面", required = true)
+            @PathVariable Long page,
+            @Parameter(name = "limit", description = "每页记录数", required = true)
+            @PathVariable Long limit,
+            @Parameter(name = "trackInfoQuery", description = "查询对象", required = false)
+            @RequestBody TrackInfoQuery trackInfoQuery)
     {
         trackInfoQuery.setUserId(AuthContextHolder.getUserId());
         Page<TrackListVo> trackListVoPage = new Page<>(page,
-                limit);
+                                                       limit);
         IPage<TrackListVo> trackListVoIPage = trackInfoService.findUserTrackPage(trackListVoPage,
-                trackInfoQuery);
+                                                                                 trackInfoQuery);
         return Result.ok(trackListVoIPage);
     }
 
@@ -91,7 +93,7 @@ public class TrackInfoApiController
                              @RequestBody @Validated TrackInfoVo trackInfoVo)
     {
         trackInfoService.updateTrackInfo(id,
-                trackInfoVo);
+                                         trackInfoVo);
         return Result.ok();
     }
 
@@ -108,11 +110,28 @@ public class TrackInfoApiController
     {
         Long userId = AuthContextHolder.getUserId();
         Page<AlbumTrackListVo> pageParam = new Page<>(page,
-                limit);
+                                                      limit);
         IPage<AlbumTrackListVo> pageModel = trackInfoService.findAlbumTrackPage(pageParam,
-                albumId,
-                userId);
+                                                                                albumId,
+                                                                                userId);
         return Result.ok(pageModel);
+    }
+
+    @GuiGuLogin
+    @Operation(summary = "获取用户声音分集购买支付列表")
+    @GetMapping("/findUserTrackPaidList/{trackId}")
+    public Result<List<Map<String, Object>>> findUserTrackPaidList(@PathVariable Long trackId)
+    {
+        List<Map<String, Object>> map = trackInfoService.findUserTrackPaidList(trackId);
+        return Result.ok(map);
+    }
+
+    @Operation(summary = "批量获取下单付费声音列表")
+    @GetMapping("findPaidTrackInfoList/{trackId}/{trackCount}")
+    public Result<List<TrackInfo>> findPaidTrackInfoList(@PathVariable Long trackId, @PathVariable Integer trackCount)
+    {
+        List<TrackInfo> trackInfoList = trackInfoService.findPaidTrackInfoList(trackId, trackCount);
+        return Result.ok(trackInfoList);
     }
 
 }

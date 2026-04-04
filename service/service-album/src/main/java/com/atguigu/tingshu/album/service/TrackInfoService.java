@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 public interface TrackInfoService extends IService<TrackInfo> {
@@ -33,4 +34,8 @@ public interface TrackInfoService extends IService<TrackInfo> {
                     Long trackId,
                     String statType,
                     Integer count);
+
+    List<Map<String, Object>> findUserTrackPaidList(Long trackId);
+
+    List<TrackInfo> findPaidTrackInfoList(Long trackId, Integer trackCount);
 }
