@@ -6,7 +6,7 @@ import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.model.album.AlbumInfo;
 import com.atguigu.tingshu.model.album.BaseCategoryView;
 import com.atguigu.tingshu.search.service.ItemService;
-import com.atguigu.tingshu.user.client.impl.UserInfoDegradeFeignClient;
+import com.atguigu.tingshu.user.client.UserInfoFeignClient;
 import com.atguigu.tingshu.vo.album.AlbumStatVo;
 import com.atguigu.tingshu.vo.user.UserInfoVo;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class ItemServiceImpl implements ItemService
     private CategoryFeignClient categoryFeignClient;
 
     @Autowired
-    private UserInfoDegradeFeignClient userInfoDegradeFeignClient;
+    private UserInfoFeignClient userInfoFeignClient;
 
     @Autowired
     private ThreadPoolExecutor threadPoolExecutor;
@@ -77,7 +77,7 @@ public class ItemServiceImpl implements ItemService
         CompletableFuture<UserInfoVo> announcerFuture = albumFuture.thenApplyAsync(albumInfo ->
                 {
                     Result<UserInfoVo> userInfoVoResult =
-                            userInfoDegradeFeignClient.getUserInfoVo(albumInfo.getUserId());
+                            userInfoFeignClient.getUserInfoVo(albumInfo.getUserId());
                     UserInfoVo userInfoVo = userInfoVoResult.getData();
                     log.info("announcer:{}",
                             JSON.toJSONString(userInfoVo));

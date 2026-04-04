@@ -26,7 +26,7 @@ import com.atguigu.tingshu.query.search.AlbumIndexQuery;
 import com.atguigu.tingshu.search.repository.AlbumInfoIndexRepository;
 import com.atguigu.tingshu.search.repository.SuggestIndexRepository;
 import com.atguigu.tingshu.search.service.SearchService;
-import com.atguigu.tingshu.user.client.impl.UserInfoDegradeFeignClient;
+import com.atguigu.tingshu.user.client.UserInfoFeignClient;
 import com.atguigu.tingshu.vo.search.AlbumInfoIndexVo;
 import com.atguigu.tingshu.vo.search.AlbumSearchResponseVo;
 import com.atguigu.tingshu.vo.user.UserInfoVo;
@@ -66,7 +66,7 @@ public class SearchServiceImpl implements SearchService
     @Autowired
     private CategoryFeignClient categoryFeignClient;
     @Autowired
-    private UserInfoDegradeFeignClient userInfoDegradeFeignClient;
+    private UserInfoFeignClient userInfoFeignClient;
     @Autowired
     private ThreadPoolExecutor threadPoolExecutor;
     @Autowired
@@ -127,7 +127,7 @@ public class SearchServiceImpl implements SearchService
 
         CompletableFuture<UserInfoVo> userFuture = albumFuture.thenApplyAsync(albumInfo ->
                 {
-                    Result<UserInfoVo> result = userInfoDegradeFeignClient.getUserInfoVo(albumInfo.getUserId());
+                    Result<UserInfoVo> result = userInfoFeignClient.getUserInfoVo(albumInfo.getUserId());
                     Assert.notNull(result,
                             "用户结果集为空");
                     Assert.notNull(result.getData(),

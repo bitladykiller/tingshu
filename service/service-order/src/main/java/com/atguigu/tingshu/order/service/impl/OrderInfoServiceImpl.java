@@ -21,8 +21,8 @@ import com.atguigu.tingshu.order.mapper.OrderDerateMapper;
 import com.atguigu.tingshu.order.mapper.OrderDetailMapper;
 import com.atguigu.tingshu.order.mapper.OrderInfoMapper;
 import com.atguigu.tingshu.order.service.OrderInfoService;
+import com.atguigu.tingshu.user.client.UserInfoFeignClient;
 import com.atguigu.tingshu.user.client.VipServiceConfigFeignClient;
-import com.atguigu.tingshu.user.client.impl.UserInfoDegradeFeignClient;
 import com.atguigu.tingshu.vo.account.AccountLockVo;
 import com.atguigu.tingshu.vo.order.OrderDerateVo;
 import com.atguigu.tingshu.vo.order.OrderDetailVo;
@@ -64,7 +64,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     @Autowired
     private OrderInfoMapper orderInfoMapper;
     @Autowired
-    private UserInfoDegradeFeignClient userInfoFeignClient;
+    private UserInfoFeignClient userInfoFeignClient;
     @Autowired
     private AlbumInfoFeignClient albumInfoFeignClient;
     @Autowired
@@ -396,6 +396,8 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     }
 
     @Override
+    @GlobalTransactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public void orderPaySuccess(String orderNo)
     {
         OrderInfo orderInfo = this.getOrderInfoByOrderNo(orderNo);
@@ -418,7 +420,11 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                                              .map(OrderDetail::getItemId)
                                              .collect(Collectors.toList());
             userPaidRecordVo.setItemIdList(itemIdList);
-            this.userInfoFeignClient.savePaidRecord(userPaidRecordVo);
+            Result userResult = this.userInfoFeignClient.savePaidRecord(userPaidRecordVo);
+            if (userResult == null || 200 != userResult.getCode())
+            {
+                throw new GuiguException(211, "新增购买记录异常");
+            }
         }
 
     }

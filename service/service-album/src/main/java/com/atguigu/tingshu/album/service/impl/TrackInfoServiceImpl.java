@@ -16,7 +16,7 @@ import com.atguigu.tingshu.model.album.AlbumInfo;
 import com.atguigu.tingshu.model.album.TrackInfo;
 import com.atguigu.tingshu.model.album.TrackStat;
 import com.atguigu.tingshu.query.album.TrackInfoQuery;
-import com.atguigu.tingshu.user.client.impl.UserInfoDegradeFeignClient;
+import com.atguigu.tingshu.user.client.UserInfoFeignClient;
 import com.atguigu.tingshu.vo.album.AlbumTrackListVo;
 import com.atguigu.tingshu.vo.album.TrackInfoVo;
 import com.atguigu.tingshu.vo.album.TrackListVo;
@@ -61,7 +61,7 @@ public class TrackInfoServiceImpl extends ServiceImpl<TrackInfoMapper, TrackInfo
     @Autowired
     private TrackStatMapper trackStatMapper;
     @Autowired
-    private UserInfoDegradeFeignClient userInfoFeignClient;
+    private UserInfoFeignClient userInfoFeignClient;
     @Autowired
     private AlbumInfoService albumInfoService;
 
