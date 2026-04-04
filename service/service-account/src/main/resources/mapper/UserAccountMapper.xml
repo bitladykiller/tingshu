@@ -22,6 +22,15 @@
           AND available_amount >= #{amount}
           AND is_deleted = 0
     </update>
+    <update id="add">
+        update user_account
+        set total_amount        = total_amount + #{amount},
+            available_amount    = available_amount + #{amount},
+            total_income_amount = total_income_amount + #{amount}
+        where user_id = #{userId}
+    </update>
+
+
 
 </mapper>
 

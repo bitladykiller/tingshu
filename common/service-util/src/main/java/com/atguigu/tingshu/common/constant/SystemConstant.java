@@ -67,6 +67,7 @@ public class SystemConstant {
     //支付表支付状态 1401-未支付 1402-已支付
     public static final String  PAYMENT_STATUS_UNPAID="1401";  // 未支付
     public static final String  PAYMENT_STATUS_PAID="1402";  // 已支付
+    public static final String  PAYMENT_STATUS_CANCEL="1403";
 
     //订单减免类型 1405-专辑折扣 1406-VIP服务折
     public static final String  ORDER_DERATE_ALBUM_DISCOUNT="1405";  // 专辑折扣

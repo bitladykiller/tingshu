@@ -9,6 +9,8 @@ import com.atguigu.tingshu.model.account.UserAccount;
 import com.atguigu.tingshu.model.account.UserAccountDetail;
 import com.atguigu.tingshu.vo.account.AccountLockVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,5 +81,25 @@ public class UserAccountServiceImpl extends ServiceImpl<UserAccountMapper, UserA
         userAccountDetail.setAmount(amount);
         userAccountDetail.setOrderNo(orderNo);
         userAccountDetailMapper.insert(userAccountDetail);
+    }
+
+    @Override
+    public void add(Long userId, BigDecimal amount, String orderNo, String tradeType, String title)
+    {
+        long count = userAccountDetailMapper.selectCount(
+                new LambdaQueryWrapper<UserAccountDetail>().eq(UserAccountDetail::getOrderNo, orderNo));
+        if (count > 0) return;
+        userAccountMapper.add(userId, amount);
+    }
+
+    public IPage<UserAccountDetail> findUserRechargePage(Page<UserAccountDetail> pageParam, Long userId)
+    {
+        return userAccountDetailMapper.selectUserRechargePage(pageParam, userId);
+    }
+
+    @Override
+    public IPage<UserAccountDetail> findUserConsumePage(Page<UserAccountDetail> pageParam, Long userId)
+    {
+        return userAccountDetailMapper.selectUserConsumePage(pageParam, userId);
     }
 }

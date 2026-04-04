@@ -87,7 +87,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     {
         RBlockingQueue<Object> blockingQueue = redissonClient.getBlockingQueue(MqConst.EXCHANGE_CANCEL_ORDER);
         RDelayedQueue<Object> delayedQueue = redissonClient.getDelayedQueue(blockingQueue);
-        delayedQueue.offer(orderId.toString() , 30 , TimeUnit.MINUTES);
+        delayedQueue.offer(orderId.toString(), 30, TimeUnit.MINUTES);
     }
 
 
@@ -399,11 +399,27 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     {
         OrderInfo orderInfo = this.getOrderInfoByOrderNo(orderNo);
         if (orderInfo.getOrderStatus()
-                     .equals(SystemConstant.ORDER_STATUS_UNPAID))
+                     .equals(SystemConstant.ORDER_STATUS_PAID))
         {
-            orderInfo.setOrderStatus(SystemConstant.ORDER_STATUS_PAID);
-            this.orderInfoMapper.updateById(orderInfo);
+            return;
         }
+        orderInfo.setOrderStatus(SystemConstant.ORDER_STATUS_PAID);
+        this.updateById(orderInfo);
+        if (orderInfo.getPayWay()
+                     .equals(SystemConstant.ORDER_PAY_WAY_WEIXIN))
+        {
+            UserPaidRecordVo userPaidRecordVo = new UserPaidRecordVo();
+            userPaidRecordVo.setOrderNo(orderNo);
+            userPaidRecordVo.setUserId(orderInfo.getUserId());
+            userPaidRecordVo.setItemType(orderInfo.getItemType());
+            List<Long> itemIdList = orderInfo.getOrderDetailList()
+                                             .stream()
+                                             .map(OrderDetail::getItemId)
+                                             .collect(Collectors.toList());
+            userPaidRecordVo.setItemIdList(itemIdList);
+            this.userInfoFeignClient.savePaidRecord(userPaidRecordVo);
+        }
+
     }
 
     @Override
