@@ -2,16 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.atguigu.tingshu</groupId>
-
     <artifactId>service-cdc</artifactId>
-
     <version>1.0-SNAPSHOT</version>
-
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -22,49 +19,46 @@
 
     <properties>
         <java.version>1.8</java.version>
-
-        <maven.compiler.source>8</maven.compiler.source>
-
-        <maven.compiler.target>8</maven.compiler.target>
-
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
-
+        <!-- Spring Web：提供 Spring MVC、内嵌 Tomcat、JSON 序列化等能力 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-
+        <!-- Canal Starter：用于监听 MySQL Binlog（Binary Log，二进制日志）变化 -->
         <dependency>
             <groupId>top.javatool</groupId>
             <artifactId>canal-spring-boot-starter</artifactId>
             <version>1.2.1-RELEASE</version>
         </dependency>
 
-
+        <!-- 只需要 JPA 注解时使用；版本建议交给 Spring Boot 管理 -->
         <dependency>
             <groupId>javax.persistence</groupId>
-            <artifactId>persistence-api</artifactId>
-            <version>1.0</version>
+            <artifactId>javax.persistence-api</artifactId>
         </dependency>
 
+        <!-- Redis Starter：默认会带上 Spring Data Redis 相关依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Lombok：简化 Getter/Setter/构造器/日志等样板代码 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Spring Boot Maven 插件：用于打可执行 Jar 包 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
