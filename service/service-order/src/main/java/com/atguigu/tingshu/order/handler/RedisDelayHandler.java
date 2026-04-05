@@ -4,13 +4,13 @@ package com.atguigu.tingshu.order.handler;
 import com.atguigu.tingshu.common.rabbit.constant.MqConst;
 import com.atguigu.tingshu.order.service.OrderInfoService;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBlockingQueue;
-import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
+@Slf4j
 @Component
 public class RedisDelayHandler
 {
@@ -22,26 +22,31 @@ public class RedisDelayHandler
     @PostConstruct
     public void listener()
     {
-        new Thread(() ->
-                   {
-                       while (true)
-                       {
-                           RBlockingQueue<Object> blockingQueue = redissonClient.getBlockingQueue(
-                                   MqConst.EXCHANGE_CANCEL_ORDER);
-                           try
-                           {
-                               String orderId = blockingQueue.take()
-                                                             .toString();
-                               if (StringUtils.hasText(orderId))
-                               {
-                                   orderInfoService.orderCancel(Long.parseLong(orderId));
-                               }
-                           }
-                           catch (InterruptedException e)
-                           {
-                               throw new RuntimeException(e);
-                           }
-                       }
-                   });
+        Thread consumerThread = new Thread(() ->
+        {
+            RBlockingQueue<Object> blockingQueue = redissonClient.getBlockingQueue(MqConst.EXCHANGE_CANCEL_ORDER);
+            while (!Thread.currentThread().isInterrupted())
+            {
+                try
+                {
+                    Object orderId = blockingQueue.take();
+                    if (orderId != null)
+                    {
+                        orderInfoService.orderCancel(Long.parseLong(orderId.toString()));
+                    }
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                    log.warn("订单取消延迟队列监听线程已中断");
+                }
+                catch (Exception e)
+                {
+                    log.error("处理订单取消延迟消息失败", e);
+                }
+            }
+        }, "order-cancel-delay-consumer");
+        consumerThread.setDaemon(true);
+        consumerThread.start();
     }
 }

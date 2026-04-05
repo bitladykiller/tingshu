@@ -7,7 +7,6 @@ import com.atguigu.tingshu.album.client.TrackInfoFeignClient;
 import com.atguigu.tingshu.common.constant.SystemConstant;
 import com.atguigu.tingshu.common.execption.GuiguException;
 import com.atguigu.tingshu.common.rabbit.constant.MqConst;
-import com.atguigu.tingshu.common.rabbit.service.RabbitService;
 import com.atguigu.tingshu.common.result.Result;
 import com.atguigu.tingshu.common.result.ResultCodeEnum;
 import com.atguigu.tingshu.model.album.AlbumInfo;
@@ -80,15 +79,13 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     @Autowired
     private OrderDerateMapper orderDerateMapper;
     @Autowired
-    private RabbitService rabbitService;
-    @Autowired
     private RedissonClient redissonClient;
 
     private void sendDelayMessage(Long orderId)
     {
         RBlockingQueue<Object> blockingQueue = redissonClient.getBlockingQueue(MqConst.EXCHANGE_CANCEL_ORDER);
         RDelayedQueue<Object> delayedQueue = redissonClient.getDelayedQueue(blockingQueue);
-        delayedQueue.offer(orderId.toString(), 30, TimeUnit.MINUTES);
+        delayedQueue.offer(orderId, MqConst.CANCEL_ORDER_DELAY_TIME, TimeUnit.SECONDS);
     }
 
 
@@ -389,8 +386,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         }
         else
         {
-            rabbitService.sendDealyMessage(MqConst.EXCHANGE_CANCEL_ORDER, MqConst.ROUTING_CANCEL_ORDER,
-                                           orderInfo.getId(), MqConst.CANCEL_ORDER_DELAY_TIME);
+            this.sendDelayMessage(orderInfo.getId());
         }
         return orderInfo;
     }
