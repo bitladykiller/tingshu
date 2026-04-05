@@ -23,7 +23,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class GuiGuLoginAspect
 {
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate redisTemplate;
 
     @Around("execution(* com.atguigu.tingshu.*.api.*.*(..)) && @annotation(guiGuLogin)")
     public Object login(ProceedingJoinPoint joinPoint,

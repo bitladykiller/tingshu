@@ -22,7 +22,7 @@ public class GuiGuCacheAspect
     private static final String NULL_VALUE = "NULL_VALUE";
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate redisTemplate;
 
     @Autowired
     private RedissonClient redissonClient;

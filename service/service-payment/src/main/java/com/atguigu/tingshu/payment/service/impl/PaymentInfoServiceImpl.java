@@ -3,9 +3,11 @@ package com.atguigu.tingshu.payment.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.atguigu.tingshu.account.client.RechargeInfoFeignClient;
 import com.atguigu.tingshu.common.constant.SystemConstant;
+import com.atguigu.tingshu.common.execption.GuiguException;
 import com.atguigu.tingshu.common.rabbit.constant.MqConst;
 import com.atguigu.tingshu.common.rabbit.service.RabbitService;
 import com.atguigu.tingshu.common.result.Result;
+import com.atguigu.tingshu.common.result.ResultCodeEnum;
 import com.atguigu.tingshu.model.account.RechargeInfo;
 import com.atguigu.tingshu.model.order.OrderInfo;
 import com.atguigu.tingshu.model.payment.PaymentInfo;
@@ -17,6 +19,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wechat.pay.java.service.payments.model.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.Date;
@@ -69,11 +72,16 @@ public class PaymentInfoServiceImpl extends ServiceImpl<PaymentInfoMapper, Payme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updatePaymentStatus(Transaction transaction)
     {
         PaymentInfo paymentInfo = this.getOne(
                 new LambdaQueryWrapper<PaymentInfo>().eq(PaymentInfo::getOrderNo, transaction.getOutTradeNo()));
-        if (paymentInfo.getPaymentStatus() == SystemConstant.PAYMENT_STATUS_PAID)
+        if (paymentInfo == null)
+        {
+            throw new GuiguException(ResultCodeEnum.DATA_ERROR);
+        }
+        if (SystemConstant.PAYMENT_STATUS_PAID.equals(paymentInfo.getPaymentStatus()))
         {
             return;
         }
